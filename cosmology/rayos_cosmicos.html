@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Cascade · Cosmic ray showers</title>
+<style>
+:root{--ink:#e9edf6;--dim:#8f9db2;--gold:#f4c87f;--line:#aac5ec22;--blue:#72c9ff;--pink:#f195dd;--muon:#86f5c2;--hadron:#ffa577;--nu:#b4a3ff}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#040914;color:var(--ink);font-family:Segoe UI,Arial,sans-serif}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+#universe,#labels{position:absolute;inset:0;display:block;width:100%;height:100%}#universe{touch-action:none;cursor:grab}#universe:active{cursor:grabbing}#labels{pointer-events:none}.interface{transition:opacity .3s}body.clean .interface{opacity:0;pointer-events:none}
+header{position:absolute;left:40px;top:28px;pointer-events:none}h1{font-family:Georgia,serif;font-size:clamp(38px,4.8vw,60px);font-weight:400;letter-spacing:-.04em;line-height:1;margin:8px 0 9px;text-shadow:0 3px 25px #0008}.subtitle{margin:0;color:#a4b5cd;font-size:12px;letter-spacing:.02em;text-shadow:0 2px 12px #000}.live{position:absolute;right:36px;top:38px;display:flex;align-items:center;gap:9px;color:#a8b5c8;font-size:10px;letter-spacing:.12em}.live i{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px #f4c87f88}.live.paused i{background:#738092;box-shadow:none}#fps{color:#748397;margin-left:9px;font-size:10px;letter-spacing:0}
+.glass{background:linear-gradient(140deg,#111c2be0,#080f1ccb);border:1px solid var(--line);backdrop-filter:blur(18px);border-radius:14px;box-shadow:0 10px 50px #0003}.panel{position:absolute;right:28px;bottom:28px;width:278px;padding:20px}.smallcaps{font-size:9px;text-transform:uppercase;letter-spacing:.17em;color:#acbad0}.panel-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.pill{font-size:8px;letter-spacing:.07em;color:#d3b784;border:1px solid #edc38426;border-radius:20px;padding:4px 7px}
+.selectrow{display:flex;justify-content:space-between;align-items:center;color:#b8c5d8;font-size:11px;margin-bottom:17px}select{max-width:156px;border:1px solid var(--line);background:#162237;color:#c9d5e8;border-radius:6px;padding:5px 7px;font-size:11px}.energy-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:10px;color:#a8b7cb}.energy-number{display:block;font-family:Georgia,serif;font-size:28px;color:var(--gold);font-weight:400;line-height:1.1;margin:2px 0 10px}#energyRaw{font-size:9px;color:#92a1b7;font-variant-numeric:tabular-nums}.ticks{display:flex;justify-content:space-between;font-size:8px;color:#6d819b;margin:9px 0}.presets{display:flex;gap:4px;margin:10px 0 14px}.presets button{flex:1;background:#ffffff04;border:1px solid #ffffff10;border-radius:5px;color:#8dabc9;padding:4px 2px;font-size:9px}.presets button.active{border-color:#f4c87f55;background:#f4c87f10;color:var(--gold)}.energy-note{font-size:10px;line-height:1.55;color:#b2bfd1;min-height:31px;margin:7px 0 14px}#perNucleon{font-size:9px;color:#8397af;margin:5px 0 0}
+.slider{margin:0 0 16px}.slider label{display:flex;justify-content:space-between;font-size:11px;color:#b8c5d8;margin-bottom:8px}output{font-variant-numeric:tabular-nums;color:#bbd8f6}input[type=range]{display:block;width:100%;height:3px;margin:0;appearance:none;background:#334058;border-radius:5px;cursor:pointer;accent-color:var(--gold)}input[type=range]::-webkit-slider-thumb{appearance:none;width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px #f4c87f22}input[type=range]::-moz-range-thumb{width:10px;height:10px;border:0;border-radius:50%;background:var(--gold)}
+.toggle{display:flex;align-items:center;justify-content:space-between;margin-top:13px;color:#b1bed1;font-size:11px;cursor:pointer}.toggle input{appearance:none;width:29px;height:16px;border-radius:20px;background:#303f53;position:relative;margin:0;cursor:pointer}.toggle input:after{content:'';position:absolute;top:3px;left:3px;width:10px;height:10px;background:#91a2b6;border-radius:50%;transition:transform .2s}.toggle input:checked{background:#776247}.toggle input:checked:after{transform:translateX(13px);background:#f1d6aa}.actions{display:flex;gap:6px;border-top:1px solid var(--line);padding-top:14px;margin-top:17px}.actions button{background:#ffffff04;border:1px solid var(--line);color:#afc0d5;border-radius:6px;padding:8px 10px;font-size:10px}.actions button:first-child{color:var(--gold);flex:1}.actions button:nth-child(2){flex:1}button:hover{background:#ffffff0c;color:#fff}.stats{display:flex;justify-content:space-between;margin-top:13px;font-size:9px;color:#7387a0}.stats b{color:#b2c5dc;font-weight:500;font-variant-numeric:tabular-nums}
+.explainer{position:absolute;left:40px;top:145px;width:250px;padding:17px}.tabs{display:flex;border-bottom:1px solid var(--line);gap:16px;margin-bottom:15px}.tabs button{border:0;background:none;padding:0 0 9px;color:#778ca8;font-size:10px}.tabs button.selected{color:#e5d0a8;border-bottom:1px solid var(--gold)}.content[hidden]{display:none}.explainer h2{font-size:11px;font-weight:500;color:#c6d6ea;margin:0 0 10px}.explainer p{font-size:10px;line-height:1.65;color:#9aadca;margin:0 0 11px}.process{border-left:1px solid #91bfff35;padding-left:11px;margin:12px 0}.process b{display:block;font-size:12px;font-weight:400;color:#d1e2f6;margin-bottom:5px}.process span{font-size:10px;line-height:1.5;color:#8da5c4}.sources{list-style:none;margin:0;padding:0}.sources li{font-size:10px;color:#8da6c3;line-height:1.5;margin:0 0 11px}.sources strong{display:block;color:#c1d0e5;font-size:10px;font-weight:500;margin-bottom:2px}.sources-note{font-size:9px!important;color:#b8a582!important;margin-top:11px!important}#familyDetail{padding-top:10px;margin-top:8px;border-top:1px solid var(--line);font-size:10px;color:#9db3cd;line-height:1.6}
+.legend{position:absolute;left:40px;bottom:100px;max-width:calc(100vw - 372px)}.legend-title{font-size:9px;letter-spacing:.08em;color:#7592b4;margin:0 0 8px}.chips{display:flex;flex-wrap:wrap;gap:6px;max-width:475px}.chips button{border:1px solid #aec6e722;border-radius:20px;background:#0b1422ba;color:#b3c5dc;padding:6px 10px;font-size:10px;backdrop-filter:blur(8px);white-space:nowrap}.chips button i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--color);box-shadow:0 0 7px var(--color);vertical-align:middle;margin-right:6px}.chips button.selected{border-color:var(--color);color:#edf5ff;background:#1a2940b0}.chips button:not(.selected).muted{opacity:.45}.chips button span{font-size:11px;color:var(--color);margin-right:4px}.caption{margin:9px 0 0;color:#657f9e;font-size:9px}
+.timeline{position:absolute;left:40px;right:338px;bottom:33px;max-width:700px}.phase-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:10px;color:#a1b9d5}#phaseName{color:#e1ca9f;font-size:9px;letter-spacing:.11em;text-transform:uppercase}.viewactions{display:flex;gap:8px}.viewactions button{border:0;background:none;color:#7b92ae;font-size:9px;padding:0}.milestones{display:flex;justify-content:space-between;margin:8px 0 0;color:#586f8b;font-size:8px}.timeline input[type=range]{background:#2b3a4f;height:2px}.timeline input[type=range]::-webkit-slider-thumb{height:7px;width:7px}
+#restoreUI{position:absolute;right:20px;bottom:18px;opacity:0;pointer-events:none;border:1px solid #ffffff16;background:#081321c9;color:#94a9c2;padding:8px 13px;border-radius:24px;font-size:10px}body.clean #restoreUI{opacity:.6;pointer-events:auto}#notice{position:absolute;right:32px;top:76px;max-width:290px;background:#121b2cdb;color:#d4be97;border:1px solid var(--line);border-radius:8px;font-size:11px;padding:10px 14px;opacity:0;transition:opacity .3s;pointer-events:none}
+#error{display:none;position:absolute;inset:0;align-items:center;justify-content:center;padding:30px;background:#080f1b}#error section{max-width:530px}#error h2{font:32px Georgia,serif;font-weight:400}#error p{color:#acbbd0;line-height:1.6}#error pre{font-size:11px;color:#cfb381;white-space:pre-wrap}
+@media(max-width:900px){header{left:25px;top:22px}.live{right:25px;top:31px}.panel{right:18px;bottom:18px;width:250px;padding:17px}.explainer{left:25px;top:135px;width:220px;padding:14px}.legend{left:25px;bottom:99px;max-width:calc(100vw - 315px)}.chips{gap:5px}.chips button{padding:5px 8px;font-size:9px}.timeline{left:25px;right:295px;bottom:29px}.viewactions button:last-child{display:none}.subtitle{font-size:11px}}
+@media(max-height:730px){.panel{padding-top:16px;padding-bottom:14px}.panel-heading{margin-bottom:11px}.selectrow{margin-bottom:13px}.energy-number{font-size:25px;margin-bottom:8px}.presets{margin:8px 0 10px}.energy-note{margin-bottom:12px}.slider{margin-bottom:12px}.toggle{margin-top:11px}.actions{padding-top:12px;margin-top:14px}.stats{margin-top:10px}.explainer .process{margin:10px 0}.explainer{top:128px}.legend{bottom:95px}}
+@media(max-width:620px){.explainer{display:none}.panel{width:218px;padding:13px}.selectrow select{max-width:135px;font-size:10px}.legend{left:16px;max-width:calc(100vw - 260px);bottom:100px}.chips{gap:5px;display:grid;grid-template-columns:1fr}.chips button{text-align:left;font-size:9px}.caption,.legend-title{display:none}.timeline{left:16px;right:253px;bottom:28px}.milestones{display:none}header{left:20px;top:19px}.subtitle{max-width:185px;line-height:1.5}#fps{display:none}.live{right:18px;top:26px;font-size:8px}.phase-row{flex-wrap:wrap;gap:9px}.viewactions button{font-size:8px}.energy-note{font-size:9px}.stats{font-size:8px}}
+.energy-note #perNucleon{display:block}
+.sources li{font-size:9.5px;line-height:1.45;margin-bottom:8px}.sources-note{line-height:1.45!important}
+.explainer{max-height:calc(100vh - 342px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#304158 transparent}
+#learnToggle{display:none;position:absolute;left:20px;top:111px;border:1px solid var(--line);background:#0b1628d9;color:#c6d6ea;border-radius:20px;padding:7px 12px;font-size:10px}
+@media(max-width:900px) and (max-height:730px){.explainer p{line-height:1.5}.explainer .process span{line-height:1.45}.explainer #familyDetail{line-height:1.45}}
+@media(max-width:620px){#learnToggle{display:block}body.learn-open .explainer{display:block;left:16px;top:151px;width:230px;max-height:calc(100vh - 180px);z-index:5;background:#0a1426f5}}
+
+</style>
+</head>
+<body>
+<canvas id="universe" aria-label="Cosmic ray air shower. Drag to orbit and scroll to zoom."></canvas><canvas id="labels" aria-hidden="true"></canvas>
+<header class="interface"><h1>Cascade</h1><p class="subtitle">One cosmic ray. A sky full of particles.</p></header>
+<div id="live" class="live interface"><i></i><span id="liveText">LIVE</span><span id="fps">Starting…</span></div>
+<aside id="explainer" class="explainer glass interface" aria-label="Shower explanation and cosmic ray sources"><div class="tabs"><button id="learnTab" class="selected">How it works</button><button id="sourcesTab">Sources</button></div>
+<section id="learnContent" class="content"><h2 id="lessonTitle">A collision starts the cascade</h2><p id="lessonIntro"></p><div class="process"><b id="reactionOne"></b><span id="reactionOneText"></span></div><div class="process"><b id="reactionTwo"></b><span id="reactionTwoText"></span></div><div id="familyDetail">Click a particle below to highlight it and learn where it comes from.</div></section>
+<section id="sourcesContent" class="content" hidden><h2>Cosmic accelerators</h2><ul class="sources"><li><strong>Supernova remnants</strong>Shock waves accelerate Galactic cosmic rays.</li><li><strong>Pulsars &amp; their winds</strong>Magnetic environments accelerate energetic electrons and positrons.</li><li><strong>Active galaxies &amp; starbursts</strong>Powerful jets and energetic galaxies are candidates at the highest energies.</li><li><strong>Gamma-ray bursts</strong>Extreme relativistic outflows are another proposed ultra-high-energy source.</li></ul><p class="sources-note">The origin of the rarest, highest-energy cosmic rays is still unresolved.</p></section></aside>
+<aside class="panel glass interface" aria-label="Cosmic ray controls"><div class="panel-heading"><span class="smallcaps">Event settings</span><span id="regime" class="pill">AIR SHOWER</span></div>
+<label class="selectrow" for="primary">Primary <select id="primary"><option value="proton">Proton · p</option><option value="helium">Helium nucleus · ⁴He</option><option value="iron">Iron nucleus · ⁵⁶Fe</option><option value="photon">Photon · γ</option><option value="electron">Electron · e⁻</option></select></label>
+<div class="energy-heading"><label id="energyLabel" for="energy">Primary kinetic energy</label><span id="energyRaw">10¹⁵ eV</span></div><output id="energyValue" class="energy-number">1.00 PeV</output><input id="energy" type="range" min="0" max="20.5" value="15" step="0.1" aria-label="Primary energy, logarithmic scale"><div class="ticks"><span>eV</span><span>keV</span><span>MeV</span><span>GeV</span><span>TeV</span><span>PeV</span><span>EeV</span></div>
+<div class="presets" aria-label="Energy presets"><button data-energy="9">GeV</button><button data-energy="12">TeV</button><button data-energy="15" class="active">PeV</button><button data-energy="18">EeV</button><button data-energy="20">100 EeV</button></div>
+<p id="energyNote" class="energy-note">A developed cascade of hadrons, photons, electrons, positrons and muons.<span id="perNucleon"></span></p>
+<div class="slider"><label for="zenith">Zenith angle <output id="zenithValue">15°</output></label><input id="zenith" type="range" min="0" max="65" value="15" step="1"></div>
+<div class="slider"><label for="speed">Playback speed <output id="speedValue">1.00×</output></label><input id="speed" type="range" min="0.2" max="2.5" value="1" step="0.05"></div>
+<label class="toggle" for="particleLabels">Particle labels <input id="particleLabels" type="checkbox" checked></label><label class="toggle" for="interactionMarkers">Interaction markers <input id="interactionMarkers" type="checkbox" checked></label>
+<div class="actions"><button id="pause" title="Pause or resume (Space)">Pause</button><button id="newShower" title="Generate a new event (N)">New shower</button><button id="reset" title="Replay (R)">↺</button></div><div class="stats"><span>Representative tracks <b id="trackCount">0</b></span><span>Event <b id="eventNumber">01</b></span></div></aside>
+<div class="legend interface" aria-label="Particle families"><p class="legend-title">PARTICLE FAMILIES · CLICK TO HIGHLIGHT</p><div class="chips"><button data-family="2" style="--color:var(--gold)"><i></i><span>γ</span>Photons</button><button data-family="3" style="--color:var(--blue)"><i></i><span>e⁻</span>Electrons</button><button data-family="4" style="--color:var(--pink)"><i></i><span>e⁺</span>Positrons</button><button data-family="5" style="--color:var(--muon)"><i></i><span>μ±</span>Muons</button><button data-family="1" style="--color:var(--hadron)"><i></i><span>π / p</span>Hadrons</button><button data-family="6" style="--color:var(--nu)"><i></i><span>ν</span>Neutrinos</button></div><p class="caption">Stylized paths, expanded lateral scale. Track counts are illustrative.</p></div>
+<div class="timeline interface"><div class="phase-row"><span id="phaseName">Primary arrival</span><nav class="viewactions" aria-label="Presentation"><button id="presentation" title="Hide controls (H)">Present · H</button><button id="fullscreen" title="Fullscreen (F)">Fullscreen ↗</button></nav></div><input id="progress" type="range" min="0" max="100" value="0" step="0.1" aria-label="Event progress"><div class="milestones"><span>ENTRY</span><span>COLLISION</span><span>MULTIPLICATION</span><span>GROUND</span></div></div>
+<button id="learnToggle" class="interface">Learn &amp; sources</button><button id="restoreUI">Show controls · H</button><div id="notice" role="status"></div><div id="error" role="alert"><section><h2>The visualization could not start</h2><p id="errorText"></p><pre id="errorDetail"></pre></section></div>
+
+<script id="quadVertex" type="x-shader/x-vertex">#version 300 es
+precision highp float;
+layout(location=0) in vec2 aPosition;
+out vec2 vUV;
+void main(){vUV=aPosition*.5+.5;gl_Position=vec4(aPosition,0.,1.);}
+</script>
+<script id="background" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+in vec2 vUV;out vec4 fragColor;
+uniform vec2 uResolution;uniform vec3 uCamera;uniform vec3 uTarget;
+float hash(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
+void main(){
+ vec3 f=normalize(uTarget-uCamera),right=normalize(cross(f,vec3(0,1,0))),up=cross(right,f);
+ vec2 s=(vUV*2.-1.)*vec2(uResolution.x/uResolution.y,1.);vec3 d=normalize(f+s.x*.40*right+s.y*.40*up);
+ vec3 c=mix(vec3(.003,.005,.013),vec3(.012,.033,.071),clamp(1.-d.y*.9,0.,1.));
+ float horizon=exp(-pow((d.y+.15)*8.,2.));c+=vec3(.012,.028,.042)*horizon;
+ if(d.y<-.002){
+   float t=-uCamera.y/d.y;vec3 p=uCamera+d*t;
+   if(t>0.){vec2 q=p.xz/3.;vec2 a=abs(fract(q-.5)-.5)/max(fwidth(q),vec2(.01));float grid=1.-clamp(min(a.x,a.y),0.,1.);
+     float fade=exp(-length(p.xz-uTarget.xz)*.019)*exp(-t*.003);c=mix(c,vec3(.004,.018,.028),.8);c+=vec3(.012,.060,.082)*grid*fade;
+     float ring=exp(-pow((length(p.xz)-8.)*.28,2.))*.008;c+=vec3(.4,1.,1.2)*ring;
+   }
+ }else{
+   vec2 uv=vec2(atan(d.z,d.x)/6.2831853+.5,asin(clamp(d.y,-1.,1.))/3.14159265+.5);vec2 g=uv*vec2(390,190),cell=floor(g),local=fract(g);
+   float seed=hash(cell),size=.045;vec2 center=.2+.6*vec2(hash(cell+13.),hash(cell+41.));float dist=length(local-center);float w=size+length(fwidth(g))*.3;
+   c+=step(.976,seed)*exp(-dist*dist/(w*w))*size*size/(w*w)*vec3(.28,.41,.57);
+ }
+ fragColor=vec4(c,1.);
+}
+</script>
+<script id="trackVertex" type="x-shader/x-vertex">#version 300 es
+precision highp float;
+layout(location=0) in vec2 aCorner;
+layout(location=1) in vec3 aFrom;
+layout(location=2) in vec3 aTo;
+layout(location=3) in vec4 aMeta;
+uniform vec3 uCamera;uniform vec3 uTarget;uniform vec2 uResolution;
+uniform float uTime;uniform float uMode;uniform float uFocus;
+out float vSide;out float vAlong;out float vKind;out float vAge;out float vOpacity;out float vSeed;
+vec2 project(vec3 p){vec3 f=normalize(uTarget-uCamera),r=normalize(cross(f,vec3(0,1,0))),up=cross(r,f),q=p-uCamera;float z=max(dot(q,f),.1);return vec2(dot(q,r)/(z*.40*uResolution.x/uResolution.y),dot(q,up)/(z*.40));}
+void main(){
+ float t0=aMeta.x,t1=aMeta.y;float progress=clamp((uTime-t0)/max(t1-t0,.01),0.,1.);vKind=aMeta.z;vSeed=aMeta.w;vAge=uTime-t1;
+ vec3 end=mix(aFrom,aTo,progress);vec2 a=project(aFrom),b=project(end),delta=(b-a)*uResolution;
+ vec2 normal=length(delta)>.001?vec2(-delta.y,delta.x)/length(delta):vec2(0,1);
+ float width=vKind<.5?2.4:(vKind>4.5&&vKind<5.5?1.35:.78);
+ float opacity=uTime>=t0?1.:0.;if(progress<.001)opacity=0.;
+ if(uFocus>.5&&abs(vKind-uFocus)>.1&&vKind>.5)opacity*=.13;
+ vOpacity=opacity;vSide=aCorner.y;vAlong=aCorner.x;
+ vec2 p;
+ if(uMode<.5){p=mix(a,b,aCorner.x)+normal*aCorner.y*width*2./uResolution;}
+ else{p=b+vec2(aCorner.x*2.-1.,aCorner.y)*4.5/uResolution;if(progress>=1.)vOpacity*=exp(-max(vAge,0.)*3.);}
+ gl_Position=vec4(p,0.,1.);
+}
+</script>
+<script id="trackFragment" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+in float vSide;in float vAlong;in float vKind;in float vAge;in float vOpacity;in float vSeed;out vec4 fragColor;
+uniform float uMode;uniform float uTime;
+vec3 color(float k){if(k<.5)return vec3(1.8,1.3,.66);if(k<1.5)return vec3(1.2,.42,.18);if(k<2.5)return vec3(1.35,.87,.24);if(k<3.5)return vec3(.22,.75,1.3);if(k<4.5)return vec3(1.1,.36,.91);if(k<5.5)return vec3(.24,1.25,.73);return vec3(.55,.40,1.);}
+void main(){
+ float alpha;
+ if(uMode<.5){alpha=(1.-smoothstep(.2,1.,abs(vSide)))*(.37+.63*exp(-max(vAge,0.)*.31));if(vKind>5.5)alpha*=.50*step(.34,fract(vAlong*16.+vSeed));}
+ else{float r=length(vec2(vAlong*2.-1.,vSide));alpha=exp(-r*r*3.8)*1.8;}
+ if(vKind>.5)alpha*=vKind>4.5&&vKind<5.5?.82:(vKind<1.5?.65:.42);
+ fragColor=vec4(color(vKind)*alpha*vOpacity,0.);
+}
+</script>
+<script id="blur" type="x-shader/x-fragment">#version 300 es
+precision highp float;in vec2 vUV;out vec4 fragColor;uniform sampler2D uTexture;uniform vec2 uDirection;uniform float uExtract;
+vec3 read(vec2 p){vec3 c=texture(uTexture,p).rgb;return uExtract>.5?max(c-.35,vec3(0)):c;}
+void main(){vec3 c=read(vUV)*.227027;c+=(read(vUV+uDirection*1.384615)+read(vUV-uDirection*1.384615))*.316216;c+=(read(vUV+uDirection*3.230769)+read(vUV-uDirection*3.230769))*.070270;fragColor=vec4(c,1.);}
+</script>
+<script id="compose" type="x-shader/x-fragment">#version 300 es
+precision highp float;in vec2 vUV;out vec4 fragColor;uniform sampler2D uScene;uniform sampler2D uBloom;
+vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
+void main(){vec3 c=texture(uScene,vUV).rgb+texture(uBloom,vUV).rgb*.55;c*=1.-.19*smoothstep(.25,1.1,length((vUV-.5)*1.5));fragColor=vec4(pow(aces(c),vec3(1./2.2)),1.);}
+</script>
+<script>
+'use strict';
+(() => {
+const $=id=>document.getElementById(id),canvas=$('universe'),overlay=$('labels'),ctx=overlay.getContext('2d');
+const primaryData={proton:{name:'Proton',symbol:'p',A:1},helium:{name:'Helium nucleus',symbol:'⁴He',A:4},iron:{name:'Iron nucleus',symbol:'⁵⁶Fe',A:56},photon:{name:'Photon',symbol:'γ',A:0},electron:{name:'Electron',symbol:'e⁻',A:0}};
+const colors=['#ffd899','#ffad7c','#f4c87f','#77cdff','#f198df','#87f5c5','#b7a5ff'];
+const symbols=['p','π±','γ','e⁻','e⁺','μ±','ν'];
+const familyDescriptions={1:'Hadrons include protons and pions. Energetic hadrons can hit more air nuclei before their energy falls enough for many charged pions to decay.',2:'Photons come especially from π⁰ → γ + γ and bremsstrahlung. Energetic photons can convert into an electron–positron pair near a nucleus.',3:'Electrons appear in pair creation and other interactions. They radiate photons through bremsstrahlung and eventually lose energy to the air.',4:'Positrons are the antimatter partners of electrons. Pair creation produces an e⁻ and e⁺ together; positrons eventually slow and annihilate.',5:'Charged pions can decay into muons and neutrinos. Some sufficiently energetic muons reach the ground; others decay into an electron or positron and two neutrinos.',6:'Neutrinos and antineutrinos emerge in charged-pion and muon decays. They rarely interact; dashed paths are guides, and no ground detection is assigned to them.'};
+const state={primary:'proton',energy:15,zenith:15,speed:1,labels:true,markers:true,focus:0};
+const view={azimuth:.42,elevation:.18,distance:72},camera={...view};
+let tracks=[],interactions=[],groundHits=[],guideTracks=[],duration=12,time=0,paused=false,seed=421337,eventNumber=1,firstTime=1.6,firstAltitude=22,last=0,frames=0,elapsed=0,frame=0;
+let gl,programs,quadVao,trackVao,guideVao,trackBuffer,guideBuffer,targets,hdr=false,lost=false,width=0,height=0,resizePending=true,noticeTimer;
+let cssW=innerWidth,cssH=innerHeight,dirtyOverlay=true,labelRects=[];
+const MAX_TRACKS=3300;
+function rngFactory(value){let s=value>>>0;return()=>{s+=0x6D2B79F5;let t=s;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const mix=(a,b,t)=>a.map((x,i)=>x+(b[i]-x)*t);
+function energyText(log){const units=['eV','keV','MeV','GeV','TeV','PeV','EeV'];const i=clamp(Math.floor(log/3),0,6),value=10**(log-3*i);return value.toFixed(value>=100?0:value>=10?1:2)+' '+units[i];}
+function regime(){const p=primaryData[state.primary],per=state.energy-(p.A?Math.log10(p.A):0),em=!p.A;
+ if(em){if(state.primary==='photon'&&state.energy<Math.log10(1.022e6))return{mode:'quiet',label:'NO CASCADE',per};if(state.energy<7.9)return{mode:state.energy>=6.01?'smallEM':'quiet',label:state.energy>=6.01?'SMALL EM EVENT':'NO CASCADE',per};return{mode:'em',label:state.energy>=18?'UHE · RARE':'EM CASCADE',per};}
+ if(per<9)return{mode:'quiet',label:'NO EXTENSIVE SHOWER',per};if(per<11)return{mode:'smallHadron',label:'SMALL EVENT',per};return{mode:'hadron',label:state.energy>=18?'UHE · RARE':'AIR SHOWER',per};
+}
+function notify(message){$('notice').textContent=message;$('notice').style.opacity='1';clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>{$('notice').style.opacity='0';},2500);}
+function sync(){
+ $('primary').value=state.primary;$('energy').value=state.energy;$('energyValue').textContent=energyText(state.energy);$('energyRaw').textContent='10^'+state.energy.toFixed(1)+' eV';$('energyLabel').textContent=state.primary==='photon'?'Primary photon energy':'Primary kinetic energy';
+ $('zenith').value=state.zenith;$('zenithValue').textContent=Math.round(state.zenith)+'°';$('speed').value=state.speed;$('speedValue').textContent=state.speed.toFixed(2)+'×';
+ $('particleLabels').checked=state.labels;$('interactionMarkers').checked=state.markers;$('eventNumber').textContent=String(eventNumber).padStart(2,'0');
+ document.querySelectorAll('[data-energy]').forEach(b=>b.classList.toggle('active',Math.abs(Number(b.dataset.energy)-state.energy)<.04));
+ const r=regime(),p=primaryData[state.primary];$('regime').textContent=r.label;
+ let note=r.mode==='quiet'?'Too little energy for a high-energy cascade.':r.mode==='smallEM'?'An isolated pair or a few electromagnetic tracks; no extensive shower.':r.mode==='smallHadron'?'A small illustrative collision, with a few pion and muon branches.':r.mode==='em'?'A shower dominated by photons, electrons and positrons.':'A developed cascade of hadrons, photons, electrons, positrons and muons.';
+ if(state.energy>=19.7)note='An extraordinarily rare energy. Many particles are represented by each visible track.';
+ const noteNode=$('energyNote');noteNode.firstChild.textContent=note;$('perNucleon').textContent=p.A?'Energy per nucleon: '+energyText(r.per):'';
+ updateLesson();
+}
+function updateLesson(){const r=regime(),p=primaryData[state.primary];let title,intro,one,oneText,two,twoText;
+ if(r.mode==='quiet'){title='No high-energy shower';intro=state.primary==='photon'?'A photon at this energy cannot create an electron–positron pair. Low-energy light may pass through the atmosphere or interact without producing a particle shower.':'At this energy per nucleon or electron, the incoming particle slows or undergoes low-energy collisions. The model does not invent pion or muon cascades.';one='No pion multiplication';oneText='The hadronic shower requires much more kinetic energy.';two='Energy deposited locally';twoText='The low-energy interaction is simplified; the atmosphere and geomagnetic cutoff are not modeled in detail.';}
+ else if(!p.A){title='An electromagnetic cascade';intro=state.primary==='photon'?'A sufficiently energetic photon converts into an electron and a positron near an air nucleus.':'An energetic electron radiates photons as it encounters air nuclei.';one='γ → e⁻ + e⁺';oneText='Pair creation requires at least 1.022 MeV of photon energy; the nearby nucleus takes recoil.';two='e± → e± + γ';twoText='Bremsstrahlung feeds the next generation. The simplified EM model omits rare muon-producing channels.';}
+ else{title=state.primary==='iron'?'One nucleus, many subshowers':'A collision starts the cascade';intro=state.primary==='iron'?'Iron has 56 nucleons. Its fragmentation feeds several subshowers. At the same total energy, it develops earlier and is usually more muon rich than a proton shower.':state.primary==='helium'?'Four nucleons share the primary energy. Their interactions feed overlapping hadronic and electromagnetic branches.':'A proton hits an air nucleus, producing secondary hadrons. They can interact again as the shower travels downward.';one='π⁰ → γ + γ';oneText='Neutral pions feed the electron–positron and photon branches.';two='π± → μ± + ν / ν̄';twoText='π⁺ produces a neutrino; π⁻ produces an antineutrino. Some muons reach the ground; others decay to e± and two neutrinos.';}
+ $('lessonTitle').textContent=title;$('lessonIntro').textContent=intro;$('reactionOne').textContent=one;$('reactionOneText').textContent=oneText;$('reactionTwo').textContent=two;$('reactionTwoText').textContent=twoText;
+}
+function addTrack(from,to,t0,t1,kind,random,tag=''){if(tracks.length>=MAX_TRACKS)return null;const track={from:[...from],to:[...to],t0,t1,kind,seed:random(),tag:tag||symbols[kind]};tracks.push(track);if(to[1]<=.02&&kind!==6&&kind!==0)groundHits.push({position:to,time:t1,kind});return track;}
+function generate(){
+ const random=rngFactory(seed),gaussian=()=>Math.sqrt(-2*Math.log(Math.max(random(),.001)))*Math.cos(random()*Math.PI*2),r=regime(),data=primaryData[state.primary];tracks=[];interactions=[];groundHits=[];
+ const emQueue=[];
+ const angle=state.zenith*Math.PI/180,tan=Math.tan(angle),top=38;
+ firstAltitude=clamp((state.primary==='iron'?28.5:state.primary==='helium'?25:state.primary==='photon'?22:state.primary==='electron'?25:21.5)+clamp((state.energy-12)*.18,-1,1.5)+gaussian()*(state.primary==='iron'?.85:state.primary==='helium'?1.6:2.7)+Math.sin(angle)*2,16,32);
+ if(r.mode==='quiet')firstAltitude=29;
+ const start=[-top*tan,top,0],first=[-firstAltitude*tan,firstAltitude,0];firstTime=1.55;
+ addTrack(start,first,.18,firstTime,0,random,data.symbol);
+ interactions.push({p:first,t:firstTime,kind:0,text:r.mode==='quiet'?'No high-energy cascade':'First interaction'});
+ const aimAt=(p,y,spread)=>[p[0]+(p[1]-y)*tan+(random()-.5)*spread*4.5,y,p[2]+(random()-.5)*spread*4.5];
+ function branchEM(p,t,kind,depth,limit,spread){emQueue.push({p:[...p],t,kind,depth,limit,spread});}
+ function traceEM(p,t,kind,depth,limit,spread){
+   if(tracks.length>=MAX_TRACKS||p[1]<.8)return;
+   const dy=Math.max(.65,(firstAltitude-2.3)/Math.max(limit+1,3)*(1+(random()-.5)*.45)),y=Math.max(.15,p[1]-dy),end=aimAt(p,y,spread*(.75+depth*.20));
+   const next=t+dy/(5.4+random()*1.2),track=addTrack(p,end,t,next,kind,random);if(!track)return;
+   if(depth>=limit||y<.8)return;
+   if(random()<.13)interactions.push({p:end,t:next,kind,text:kind===2?'Pair creation':'Bremsstrahlung'});
+   if(kind===2){branchEM(end,next,3,depth+1,limit,spread);branchEM(end,next,4,depth+1,limit,spread);}
+   else{branchEM(end,next,kind,depth+1,limit,spread);branchEM(end,next,2,depth+1,limit,spread);}
+ }
+ function muon(p,t,depth){
+   const sign=random()<.5?'μ⁻':'μ⁺';let endTime;
+   if(p[1]>4&&random()<.20){const y=p[1]*(.25+random()*.35),end=aimAt(p,y,.55);endTime=t+(p[1]-y)/7.2;addTrack(p,end,t,endTime,5,random,sign);interactions.push({p:end,t:endTime,kind:5,text:'Muon decay'});branchEM(end,endTime,sign==='μ⁻'?3:4,0,2,.9);for(let j=0;j<2;j++)addTrack(end,aimAt(end,0,1.8),endTime,endTime+y/7,6,random,'ν');}
+   else{const end=aimAt(p,0,.7+depth*.05);endTime=t+p[1]/7.2;addTrack(p,end,t,endTime,5,random,sign);}
+   addTrack(p,aimAt(p,0,1.4),t,t+p[1]/7.8,6,random,'ν');
+ }
+ function branchHadron(p,t,depth,limit){
+   if(tracks.length>=MAX_TRACKS||p[1]<1.8)return;
+   const dy=(firstAltitude-3.5)/Math.max(limit+1,3)*(1+(random()-.5)*.5),y=Math.max(.5,p[1]-dy),end=aimAt(p,y,.7+depth*.16),next=t+dy/(5.4+random());
+   if(!addTrack(p,end,t,next,1,random,depth<1?'p / n':'π±'))return;
+   const muonChance=.18+depth*.10+(state.primary==='iron'?.16:state.primary==='helium'?.06:0);
+   const decays=depth>=limit||(depth>0&&random()<muonChance);
+   interactions.push({p:end,t:next,kind:1,text:decays?'Pion decay':'Hadronic interaction'});
+   const emLimit=clamp(Math.round((state.energy-10)*.40)+2-depth,1,7);
+   if(!decays&&random()<.92){branchEM(end,next,2,0,emLimit,.75);branchEM(end,next,2,0,emLimit,.75);}
+   if(decays)muon(end,next,depth);
+   else{branchHadron(end,next,depth+1,limit);branchHadron(end,next,depth+1,limit);if(state.energy>16&&random()<.55)branchHadron(end,next,depth+1,limit);}
+ }
+ if(r.mode==='quiet'){
+   if(state.primary==='photon')addTrack(first,aimAt(first,0,0),firstTime,firstTime+5,2,random,'photon');
+   else addTrack(first,aimAt(first,firstAltitude-1.8,.15),firstTime,firstTime+.65,0,random,data.symbol);
+ }else if(r.mode==='smallEM'){
+   if(state.primary==='photon'){branchEM(first,firstTime,3,0,0,.8);branchEM(first,firstTime,4,0,0,.8);}
+   else{branchEM(first,firstTime,3,0,1,.7);branchEM(first,firstTime,2,0,0,.7);}
+ }else if(r.mode==='em'){
+   const limit=clamp(Math.round((state.energy-8)*.75)+2,2,11);
+   if(state.primary==='photon'){branchEM(first,firstTime,3,0,limit,.8);branchEM(first,firstTime,4,0,limit,.8);}
+   else branchEM(first,firstTime,3,0,limit,.8);
+ }else{
+   const limit=r.mode==='smallHadron'?1:clamp(Math.round((state.energy-10)*.36)+2,2,6);
+   const roots=r.mode==='smallHadron'?1:state.primary==='iron'?9:state.primary==='helium'?4:2;
+   for(let i=0;i<roots;i++){const offset=i?[first[0]+gaussian()*.20,first[1]-random()*.4,first[2]+gaussian()*.20]:first;branchHadron(offset,firstTime+i*.012,0,limit);}
+ }
+ // Build the hadron and muon skeleton first, then share the EM budget across all roots.
+ for(let i=0;i<emQueue.length&&tracks.length<MAX_TRACKS;i++){const q=emQueue[i];traceEM(q.p,q.t,q.kind,q.depth,q.limit,q.spread);}
+ duration=Math.max(8.2,...tracks.map(t=>t.t1))+2.4;time=0;
+ // A bounded number of tracks represents grouped particles; it is not a yield calculation.
+ tracks.sort((a,b)=>a.t0-b.t0);
+ $('trackCount').textContent=tracks.length.toLocaleString('en-US');sync();if(gl)uploadTracks();dirtyOverlay=true;
+}
+function showError(message,detail=''){$('error').style.display='flex';$('errorText').textContent=message;$('errorDetail').textContent=detail;lost=true;}
+function compile(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){const log=gl.getShaderInfoLog(s);gl.deleteShader(s);throw new Error(log);}return s;}
+function program(vertex,fragment,names){const p=gl.createProgram(),vs=compile(gl.VERTEX_SHADER,$(vertex).textContent),fs=compile(gl.FRAGMENT_SHADER,$(fragment).textContent);gl.attachShader(p,vs);gl.attachShader(p,fs);gl.linkProgram(p);gl.deleteShader(vs);gl.deleteShader(fs);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));const uniforms={};for(const n of names)uniforms[n]=gl.getUniformLocation(p,n);return{p,uniforms};}
+function target(w,h,useHDR){const texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);for(const flag of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,flag,gl.LINEAR);for(const flag of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,flag,gl.CLAMP_TO_EDGE);gl.texImage2D(gl.TEXTURE_2D,0,useHDR?gl.RGBA16F:gl.RGBA8,w,h,0,gl.RGBA,useHDR?gl.HALF_FLOAT:gl.UNSIGNED_BYTE,null);const fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE){gl.deleteFramebuffer(fb);gl.deleteTexture(texture);throw new Error('The image buffer is not supported.');}return{texture,fb,w,h};}
+function destroyTargets(){if(targets)for(const t of targets){gl.deleteFramebuffer(t.fb);gl.deleteTexture(t.texture);}targets=null;}
+function allocateTargets(w,h,useHDR){const a=[];try{for(const [tw,th]of [[w,h],[Math.max(1,w>>2),Math.max(1,h>>2)],[Math.max(1,w>>2),Math.max(1,h>>2)]])a.push(target(tw,th,useHDR));return a;}catch(e){for(const t of a){gl.deleteFramebuffer(t.fb);gl.deleteTexture(t.texture);}throw e;}}
+function resize(){cssW=innerWidth;cssH=innerHeight;const dpr=Math.min(devicePixelRatio||1,1.4),ratio=Math.min(dpr,1920/Math.max(cssW,cssH));width=Math.max(1,Math.round(cssW*ratio));height=Math.max(1,Math.round(cssH*ratio));canvas.width=width;canvas.height=height;overlay.width=width;overlay.height=height;destroyTargets();try{targets=allocateTargets(width,height,hdr);}catch(e){hdr=false;targets=allocateTargets(width,height,false);}resizePending=false;dirtyOverlay=true;}
+function makeTrackVao(){const v=gl.createVertexArray();gl.bindVertexArray(v);const corners=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,corners);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([0,-1,1,-1,1,1,0,-1,1,1,0,1]),gl.STATIC_DRAW);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);const data=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,data);gl.bufferData(gl.ARRAY_BUFFER,40,gl.DYNAMIC_DRAW);for(const [loc,size,offset]of [[1,3,0],[2,3,12],[3,4,24]]){gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,size,gl.FLOAT,false,40,offset);gl.vertexAttribDivisor(loc,1);}return{vao:v,buffer:data};}
+function flatten(list){const data=new Float32Array(list.length*10);list.forEach((t,i)=>data.set([...t.from,...t.to,t.t0,t.t1,t.kind,t.seed],i*10));return data;}
+function uploadTracks(){gl.bindBuffer(gl.ARRAY_BUFFER,trackBuffer);gl.bufferData(gl.ARRAY_BUFFER,flatten(tracks),gl.DYNAMIC_DRAW);}
+function buildGuides(){guideTracks=[];let j=0;const add=(a,b)=>guideTracks.push({from:a,to:b,t0:-100,t1:-99,kind:6,seed:j++*.03});for(const h of [10,20,30]){for(let i=0;i<80;i++){const a=i*Math.PI*2/80,b=(i+1)*Math.PI*2/80;add([8*Math.cos(a)-Math.tan(state.zenith*Math.PI/180)*h,h,8*Math.sin(a)],[8*Math.cos(b)-Math.tan(state.zenith*Math.PI/180)*h,h,8*Math.sin(b)]);}}gl.bindBuffer(gl.ARRAY_BUFFER,guideBuffer);gl.bufferData(gl.ARRAY_BUFFER,flatten(guideTracks),gl.STATIC_DRAW);}
+function init(){
+ gl=canvas.getContext('webgl2',{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:'high-performance'});if(!gl)throw new Error('WebGL 2 is required. Use a modern browser with hardware acceleration enabled.');hdr=!!gl.getExtension('EXT_color_buffer_float');
+ programs={background:program('quadVertex','background',['uResolution','uCamera','uTarget']),tracks:program('trackVertex','trackFragment',['uCamera','uTarget','uResolution','uTime','uMode','uFocus']),blur:program('quadVertex','blur',['uTexture','uDirection','uExtract']),compose:program('quadVertex','compose',['uScene','uBloom'])};
+ quadVao=gl.createVertexArray();gl.bindVertexArray(quadVao);const q=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,q);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+ const t=makeTrackVao();trackVao=t.vao;trackBuffer=t.buffer;const g=makeTrackVao();guideVao=g.vao;guideBuffer=g.buffer;uploadTracks();buildGuides();gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);resizePending=true;lost=false;
+}
+function geometry(){const angle=state.zenith*Math.PI/180,fit=Math.max(1,1/Math.cos(angle)**.8),target=[-17*Math.tan(angle),17,0],d=camera.distance*fit,c=Math.cos(camera.elevation),position=[target[0]+Math.sin(camera.azimuth)*c*d,target[1]+Math.sin(camera.elevation)*d,Math.cos(camera.azimuth)*c*d];const f=target.map((v,i)=>v-position[i]),fn=Math.hypot(...f),forward=f.map(v=>v/fn),rn=Math.hypot(forward[2],forward[0]),right=[-forward[2]/rn,0,forward[0]/rn],up=[right[1]*forward[2]-right[2]*forward[1],right[2]*forward[0]-right[0]*forward[2],right[0]*forward[1]-right[1]*forward[0]];return{position,target,forward,right,up};}
+function project(p,g){const q=p.map((x,i)=>x-g.position[i]),z=q.reduce((s,x,i)=>s+x*g.forward[i],0);if(z<=.1)return null;return{x:cssW/2+q.reduce((s,x,i)=>s+x*g.right[i],0)*cssH/(2*z*.40),y:cssH/2-q.reduce((s,x,i)=>s+x*g.up[i],0)*cssH/(2*z*.40)};}
+function bindTexture(t,unit){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);}
+function pass(p,t){gl.useProgram(p.p);gl.bindFramebuffer(gl.FRAMEBUFFER,t?t.fb:null);gl.viewport(0,0,t?t.w:width,t?t.h:height);}
+function draw(g){
+ gl.bindVertexArray(quadVao);const b=programs.background;pass(b,targets[0]);gl.uniform2f(b.uniforms.uResolution,width,height);gl.uniform3fv(b.uniforms.uCamera,g.position);gl.uniform3fv(b.uniforms.uTarget,g.target);gl.drawArrays(gl.TRIANGLES,0,3);
+ const p=programs.tracks;pass(p,targets[0]);gl.uniform3fv(p.uniforms.uCamera,g.position);gl.uniform3fv(p.uniforms.uTarget,g.target);gl.uniform2f(p.uniforms.uResolution,width,height);gl.uniform1f(p.uniforms.uTime,time);gl.uniform1f(p.uniforms.uMode,0);gl.uniform1f(p.uniforms.uFocus,state.focus);gl.bindVertexArray(trackVao);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);gl.drawArraysInstanced(gl.TRIANGLES,0,6,tracks.length);gl.uniform1f(p.uniforms.uMode,1);gl.drawArraysInstanced(gl.TRIANGLES,0,6,tracks.length);gl.disable(gl.BLEND);
+ gl.bindVertexArray(quadVao);const blur=programs.blur;pass(blur,targets[1]);bindTexture(targets[0].texture,0);gl.uniform1i(blur.uniforms.uTexture,0);gl.uniform2f(blur.uniforms.uDirection,1/width,0);gl.uniform1f(blur.uniforms.uExtract,1);gl.drawArrays(gl.TRIANGLES,0,3);pass(blur,targets[2]);bindTexture(targets[1].texture,0);gl.uniform2f(blur.uniforms.uDirection,0,1/targets[1].h);gl.uniform1f(blur.uniforms.uExtract,0);gl.drawArrays(gl.TRIANGLES,0,3);pass(blur,targets[1]);bindTexture(targets[2].texture,0);gl.uniform2f(blur.uniforms.uDirection,1/targets[2].w,0);gl.drawArrays(gl.TRIANGLES,0,3);
+ const c=programs.compose;pass(c,null);bindTexture(targets[0].texture,0);bindTexture(targets[1].texture,1);gl.uniform1i(c.uniforms.uScene,0);gl.uniform1i(c.uniforms.uBloom,1);gl.drawArrays(gl.TRIANGLES,0,3);
+}
+function label(p,text,color,g,avoid=false){const q=project(p,g);if(!q||q.x<0||q.x>cssW||q.y<0||q.y>cssH)return;ctx.font='10px Segoe UI';const w=ctx.measureText(text).width;let x=q.x+6,y=q.y-12;
+ if(avoid){for(const [dx,dy]of [[10,-12],[14,-38],[14,14],[-w-24,-38],[-w-24,14],[18,-64],[-w-28,40]]){const bx=clamp(q.x+dx,5,cssW-w-15),by=clamp(q.y+dy,5,cssH-22);if(labelRects.some(r=>bx<r.x+r.w+4&&bx+w+14>r.x&&by<r.y+21&&by+21>r.y))continue;x=bx;y=by;break;}labelRects.push({x,y,w:w+10});ctx.strokeStyle=color+'60';ctx.lineWidth=.65;ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.lineTo(x+(x<q.x?w+10:0),y+8);ctx.stroke();}
+ ctx.fillStyle='#061020d9';ctx.fillRect(x,y,w+10,17);ctx.fillStyle=color;ctx.fillText(text,x+5,y+12);}
+function drawOverlay(g){
+ ctx.setTransform(width/cssW,0,0,height/cssH,0,0);ctx.clearRect(0,0,cssW,cssH);labelRects=[];
+ // Altitude ticks and rings are schematic guides, deliberately subdued.
+ ctx.lineWidth=.6;ctx.strokeStyle='#78aacd18';for(const h of [10,20,30]){ctx.beginPath();let start=true;for(let i=0;i<=80;i++){const a=i*Math.PI*2/80,p=[8*Math.cos(a)-Math.tan(state.zenith*Math.PI/180)*h,h,8*Math.sin(a)],q=project(p,g);if(!q)continue;start?ctx.moveTo(q.x,q.y):ctx.lineTo(q.x,q.y);start=false;}ctx.stroke();if(!document.body.classList.contains('clean'))label([-8-Math.tan(state.zenith*Math.PI/180)*h,h,0],h+' km · schematic','#63809c',g);}
+ if(state.markers){for(const node of interactions){const age=time-node.t;if(age<0||age>2)continue;if(state.focus&&node.kind!==state.focus&&node.kind!==0)continue;const q=project(node.p,g);if(!q)continue;const alpha=Math.exp(-age*2);ctx.strokeStyle=colors[node.kind]+Math.round(alpha*150).toString(16).padStart(2,'0');ctx.beginPath();ctx.arc(q.x,q.y,3+age*8,0,Math.PI*2);ctx.stroke();if(node.kind===0&&age<1.8)label(node.p,node.text,'#f6d7a2',g);}}
+ for(const hit of groundHits){const age=time-hit.time;if(age<0||age>1.6)continue;if(state.focus&&hit.kind!==state.focus)continue;const q=project(hit.position,g);if(!q)continue;ctx.strokeStyle=colors[hit.kind]+Math.round(Math.exp(-age*2)*160).toString(16).padStart(2,'0');ctx.beginPath();ctx.ellipse(q.x,q.y,3+age*6,1.5+age*2,0,0,Math.PI*2);ctx.stroke();}
+ if(state.labels){let drawn=0;const seen=new Set();for(const t of tracks){if(time<t.t0||time>t.t1+.35)continue;if(state.focus&&t.kind!==state.focus&&t.kind!==0)continue;if(seen.has(t.kind))continue;const progress=clamp((time-t.t0)/(t.t1-t.t0),0,1),p=mix(t.from,t.to,progress);label(p,t.kind===0?primaryData[state.primary].name+' · '+energyText(state.energy):t.tag,colors[t.kind],g,true);seen.add(t.kind);if(++drawn>=7)break;}}
+ if(!document.body.classList.contains('clean')){const q=project([0,0,3],g);if(q){ctx.fillStyle='#6f93ab';ctx.font='9px Segoe UI';ctx.fillText('GROUND · ILLUSTRATIVE FOOTPRINT',q.x-85,q.y+28);}}
+}
+function updateHUD(){const r=regime();let phase=time<firstTime?'Primary arrival':r.mode==='quiet'?'No high-energy cascade':time<firstTime+.75?'First interaction':time<duration*.64?'Particle multiplication':time<duration-1.9?'Particles reaching the ground':'Shower complete';$('phaseName').textContent=phase;$('progress').value=100*time/duration;}
+function pause(){paused=!paused;$('pause').textContent=paused?'Resume':'Pause';$('liveText').textContent=paused?'PAUSED':'LIVE';$('live').classList.toggle('paused',paused);}
+function replay(){time=0;updateHUD();}
+function newEvent(){seed=(seed+15485863)>>>0;eventNumber++;generate();if(gl)buildGuides();}
+function toggleUI(){document.body.classList.toggle('clean');dirtyOverlay=true;}
+async function fullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(e){notify('Use F11 for fullscreen in this browser.');}}
+function setTab(name){const learn=name==='learn';$('learnContent').hidden=!learn;$('sourcesContent').hidden=learn;$('learnTab').classList.toggle('selected',learn);$('sourcesTab').classList.toggle('selected',!learn);$('explainer').scrollTop=0;}
+$('learnToggle').addEventListener('click',()=>{document.body.classList.toggle('learn-open');$('learnToggle').textContent=document.body.classList.contains('learn-open')?'Close learning panel':'Learn & sources';});
+$('learnTab').addEventListener('click',()=>setTab('learn'));$('sourcesTab').addEventListener('click',()=>setTab('sources'));
+$('primary').addEventListener('change',e=>{state.primary=e.target.value;generate();});$('energy').addEventListener('input',e=>{state.energy=Number(e.target.value);generate();});$('zenith').addEventListener('input',e=>{state.zenith=Number(e.target.value);generate();if(gl)buildGuides();});$('speed').addEventListener('input',e=>{state.speed=Number(e.target.value);sync();});
+document.querySelectorAll('[data-energy]').forEach(b=>b.addEventListener('click',()=>{state.energy=Number(b.dataset.energy);generate();}));
+$('particleLabels').addEventListener('change',e=>{state.labels=e.target.checked;dirtyOverlay=true;});$('interactionMarkers').addEventListener('change',e=>{state.markers=e.target.checked;dirtyOverlay=true;});
+document.querySelectorAll('[data-family]').forEach(b=>b.addEventListener('click',()=>{const family=Number(b.dataset.family);state.focus=state.focus===family?0:family;document.querySelectorAll('[data-family]').forEach(c=>{c.classList.toggle('selected',Number(c.dataset.family)===state.focus);c.classList.toggle('muted',!!state.focus&&Number(c.dataset.family)!==state.focus);});$('familyDetail').textContent=state.focus?familyDescriptions[state.focus]:'Click a particle below to highlight it and learn where it comes from.';setTab('learn');if(innerWidth<=620){document.body.classList.add('learn-open');$('learnToggle').textContent='Close learning panel';} if(state.focus)$('learnContent').prepend($('familyDetail'));else $('learnContent').append($('familyDetail'));$('explainer').scrollTop=0;dirtyOverlay=true;}));
+$('pause').addEventListener('click',pause);$('newShower').addEventListener('click',newEvent);$('reset').addEventListener('click',replay);$('presentation').addEventListener('click',toggleUI);$('restoreUI').addEventListener('click',toggleUI);$('fullscreen').addEventListener('click',fullscreen);
+$('progress').addEventListener('input',e=>{time=Number(e.target.value)*duration/100;if(!paused)pause();updateHUD();dirtyOverlay=true;});
+let drag=null;canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!drag)return;view.azimuth-=(e.clientX-drag.x)*.005;view.elevation=clamp(view.elevation+(e.clientY-drag.y)*.003,-.03,.75);drag={x:e.clientX,y:e.clientY};});const endDrag=()=>{drag=null;};canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);canvas.addEventListener('lostpointercapture',endDrag);canvas.addEventListener('wheel',e=>{e.preventDefault();view.distance=clamp(view.distance+e.deltaY*.04,45,140);},{passive:false});
+document.addEventListener('keydown',e=>{if(e.target.matches('select,textarea,[contenteditable="true"]')||e.ctrlKey||e.altKey||e.metaKey||e.repeat)return;if(e.key===' '&&e.target.matches('input,button'))return;switch(e.key.toLowerCase()){case ' ':e.preventDefault();pause();break;case 'h':toggleUI();break;case 'f':fullscreen();break;case 'r':replay();break;case 'n':newEvent();break;}});
+window.addEventListener('resize',()=>{resizePending=true;});document.addEventListener('visibilitychange',()=>{last=0;frames=elapsed=0;});canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true;notify('Reconnecting to the graphics card…');});canvas.addEventListener('webglcontextrestored',()=>{try{targets=null;init();last=0;}catch(e){showError('Reload the page to restore the visualization.',e.message);}});
+function animate(now){requestAnimationFrame(animate);if(lost||document.hidden)return;const rawDt=last?(now-last)/1000:0,dt=Math.min(rawDt,.12);last=now;if(!paused){time+=dt*state.speed;if(time>duration)newEvent();}const ease=1-Math.exp(-dt*8);for(const key of ['azimuth','elevation','distance'])camera[key]+=(view[key]-camera[key])*ease;try{if(resizePending)resize();const g=geometry();draw(g);drawOverlay(g);}catch(e){showError('The visualization could not render. Try reloading the page.',e.message);return;}frame++;frames++;elapsed+=rawDt;if(frame%6===0)updateHUD();if(elapsed>1.5){$('fps').textContent=Math.round(frames/elapsed)+' FPS';frames=elapsed=0;}}
+generate();try{init();requestAnimationFrame(animate);}catch(e){showError('Open this file in a modern browser with hardware acceleration enabled.',e.message);}
+})();
+</script>
+</body>
+</html>

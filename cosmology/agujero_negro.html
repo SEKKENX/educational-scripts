@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Horizon · Black hole simulation</title>
+<style>
+  :root { --ink:#eee8dc; --dim:#918f98; --gold:#eab976; --line:rgba(231,214,185,.15); }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; overflow:hidden; background:#030409; color:var(--ink); font-family:Segoe UI,Arial,sans-serif; }
+  button,input,select { font:inherit; }
+  button { cursor:pointer; }
+  #universe { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
+  #universe:active { cursor:grabbing; }
+  .interface { transition:opacity .35s,transform .35s; }
+  body.clean .interface { opacity:0; pointer-events:none; }
+  header { position:absolute; top:38px; left:44px; pointer-events:none; }
+  .eyebrow { font-size:10px; font-weight:600; letter-spacing:.26em; color:var(--gold); text-transform:uppercase; }
+  h1 { margin:12px 0 9px; font-family:Georgia,serif; font-size:clamp(36px,5vw,64px); font-weight:400; letter-spacing:-.04em; line-height:1; }
+  .subtitle { font-size:13px; color:#aaa5a1; letter-spacing:.03em; margin:0; }
+  .status { position:absolute; top:42px; right:40px; display:flex; align-items:center; gap:10px; font-size:10px; letter-spacing:.16em; color:#b3b0ae; }
+  .dot { width:6px; height:6px; background:#eab976; border-radius:50%; box-shadow:0 0 12px #eab97688; }
+  .status.paused .dot { background:#777; box-shadow:none; }
+  .model { position:absolute; bottom:36px; left:44px; max-width:340px; pointer-events:none; }
+  .model strong { font-size:10px; letter-spacing:.18em; color:#c2bdb5; font-weight:500; }
+  .model p { font-size:12px; line-height:1.65; color:#85858f; margin:9px 0 18px; }
+  .facts { display:flex; gap:28px; }
+  .fact span { display:block; color:#6d6e79; font-size:9px; text-transform:uppercase; letter-spacing:.12em; margin-bottom:5px; }
+  .fact b { font-family:Georgia,serif; font-size:17px; font-weight:400; color:#c8b9a4; }
+  .panel { position:absolute; right:32px; bottom:32px; width:284px; border:1px solid var(--line); background:linear-gradient(140deg,rgba(16,18,25,.82),rgba(8,10,17,.72)); backdrop-filter:blur(18px); border-radius:16px; padding:20px 21px 16px; box-shadow:0 14px 60px #0004; }
+  .panel-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .panel-title { font-size:10px; text-transform:uppercase; letter-spacing:.18em; color:#c0b7aa; }
+  #fps { font-size:10px; color:#777e89; font-variant-numeric:tabular-nums; }
+  .slider { margin:0 0 15px; }
+  .slider label { display:flex; justify-content:space-between; font-size:11px; color:#b6b2ae; margin-bottom:8px; }
+  output { color:var(--gold); font-variant-numeric:tabular-nums; }
+  input[type=range] { display:block; width:100%; height:3px; margin:0; appearance:none; background:#333139; border-radius:8px; cursor:pointer; accent-color:var(--gold); }
+  input[type=range]::-webkit-slider-thumb { appearance:none; width:10px; height:10px; border-radius:50%; background:var(--gold); box-shadow:0 0 10px #eab97633; }
+  input[type=range]::-moz-range-thumb { width:10px; height:10px; border:none; border-radius:50%; background:var(--gold); }
+  .toggle { display:flex; align-items:center; justify-content:space-between; font-size:11px; color:#b6b2ae; margin-top:14px; cursor:pointer; }
+  .toggle input { appearance:none; width:29px; height:16px; border-radius:20px; background:#32343d; position:relative; margin:0; cursor:pointer; transition:background .2s; }
+  .toggle input:after { content:''; position:absolute; width:10px; height:10px; top:3px; left:3px; border-radius:50%; background:#999; transition:transform .2s,background .2s; }
+  .toggle input:checked { background:#866645; }
+  .toggle input:checked:after { transform:translateX(13px); background:#f3cf9e; }
+  .quality { display:flex; align-items:center; justify-content:space-between; margin-top:16px; font-size:11px; color:#b6b2ae; }
+  select { background:#191b24; color:#c5b8a8; border:1px solid var(--line); border-radius:5px; padding:4px 6px; font-size:10px; }
+  .actions { display:flex; gap:7px; margin-top:18px; border-top:1px solid var(--line); padding-top:15px; }
+  .actions button { border:1px solid var(--line); border-radius:7px; background:#ffffff04; color:#b5b0aa; font-size:11px; padding:8px 10px; }
+  .actions button:first-child { color:#e5c293; flex:1; }
+  button:hover { background:#ffffff0b; color:#fff; }
+  button:focus-visible,input:focus-visible,select:focus-visible { outline:2px solid var(--gold); outline-offset:4px; }
+  .hint { position:absolute; left:50%; top:38px; transform:translateX(-50%); display:flex; gap:8px; }
+  .hint button { background:#0e101880; color:#8d8e99; border:1px solid #ffffff0b; padding:7px 11px; border-radius:30px; font-size:10px; backdrop-filter:blur(8px); }
+  #restoreUI { position:absolute; right:22px; bottom:18px; border:1px solid #ffffff16; border-radius:25px; color:#9b9997; background:#080a12aa; font-size:11px; padding:8px 14px; opacity:0; pointer-events:none; transition:opacity .3s; }
+  body.clean #restoreUI { opacity:.55; pointer-events:auto; }
+  #restoreUI:hover { opacity:1; }
+  #trajectoryPanel { position:absolute; left:44px; top:215px; width:350px; border:1px solid var(--line); background:#080b14d9; backdrop-filter:blur(12px); border-radius:13px; padding:17px; }
+  #trajectoryPanel[hidden] { display:none; }
+  #trajectoryPanel h2 { font-size:10px; letter-spacing:.18em; text-transform:uppercase; font-weight:500; color:#d6c0a0; margin:0 0 8px; }
+  #trajectoryPanel p { font-size:10px; color:#9597a4; line-height:1.5; margin:7px 0 0; }
+  #paths { display:block; width:100%; height:170px; }
+  .legend { display:flex; gap:18px; font-size:9px; color:#a1a0a8; margin-top:8px; }
+  .legend span:before { content:''; display:inline-block; width:12px; height:2px; margin-right:6px; vertical-align:middle; background:#eab976; }
+  .legend span:last-child:before { background:#6dc4ef; }
+  #notice { position:absolute; top:85px; right:32px; font-size:11px; color:#d0b487; background:#15131dcc; border:1px solid var(--line); border-radius:8px; padding:10px 15px; opacity:0; transition:opacity .3s; pointer-events:none; max-width:320px; }
+  #error { display:none; position:absolute; inset:0; align-items:center; justify-content:center; background:#090c16; padding:30px; }
+  #error section { max-width:560px; }
+  #error h2 { font-family:Georgia,serif; font-size:32px; font-weight:400; }
+  #error p { line-height:1.7; color:#b5b5bf; }
+  #error pre { white-space:pre-wrap; color:#d0b487; font-size:11px; }
+  @media(max-width:800px) { header { top:25px; left:25px; } .status { top:28px; right:25px; } .hint { top:auto; bottom:22px; left:25px; transform:none; } .model { display:none; } .panel { right:18px; bottom:18px; width:244px; padding:16px; } #trajectoryPanel { left:20px; top:155px; width:min(330px,calc(100vw - 40px)); } .hint button:nth-child(2) { display:none; } }
+  @media(max-width:560px) { .subtitle { max-width:190px; font-size:11px; line-height:1.5; } .status { font-size:8px; } h1 { font-size:42px; } .panel { width:220px; } .hint { gap:5px; bottom:18px; left:15px; } .hint button { font-size:9px; padding:7px 8px; } #trajectoryPanel { top:143px; } }
+  @media(max-height:660px) and (min-width:801px) { header { top:24px; left:30px; } h1 { font-size:46px; } .panel { bottom:20px; right:24px; padding:15px 18px; } .slider { margin-bottom:11px; } #trajectoryPanel { top:165px; left:30px; } .model { bottom:22px; left:30px; } }
+</style>
+</head>
+<body>
+<canvas id="universe" aria-label="Interactive simulation of light around a black hole. Drag to orbit the camera and scroll to zoom."></canvas>
+<header class="interface"><h1>Horizon</h1><p class="subtitle">Gravity changes the path of light.</p></header>
+<div class="status interface" id="status"><span class="dot"></span><span id="statusText">LIVE</span></div>
+<nav class="hint interface" aria-label="Presentation"><button id="presentation" title="Hide controls (H)">Presentation mode · H</button><button id="fullscreen" title="Fullscreen (F)">Fullscreen ↗</button></nav>
+<aside class="model interface"><strong>SCHWARZSCHILD / NON-ROTATING</strong><p>Starlight bends. The far side of the disk rises into an arc of light around the shadow.</p><div class="facts"><div class="fact"><span>Event horizon</span><b>1 r<sub>s</sub></b></div><div class="fact"><span>Photon sphere</span><b>1.5 r<sub>s</sub></b></div><div class="fact"><span>Inner disk</span><b>3 r<sub>s</sub></b></div></div></aside>
+<aside class="panel interface" aria-label="Simulation controls">
+  <div class="panel-head"><span class="panel-title">Observatory</span><span id="fps">Starting…</span></div>
+  <div class="slider"><label for="inclination">Camera elevation <output id="inclinationValue">16°</output></label><input id="inclination" type="range" min="4" max="85" value="16" step="1"></div>
+  <div class="slider"><label for="distance">Distance <output id="distanceValue">16.0 rₛ</output></label><input id="distance" type="range" min="11" max="28" value="16" step="0.1"></div>
+  <div class="slider"><label for="brightness">Brightness <output id="brightnessValue">1.10</output></label><input id="brightness" type="range" min="0.3" max="2.5" value="1.1" step="0.05"></div>
+  <div class="slider"><label for="speed">Disk speed <output id="speedValue">1.00×</output></label><input id="speed" type="range" min="0" max="2" value="1" step="0.05"></div>
+  <label class="toggle" for="lensing">Gravitational lensing <input id="lensing" type="checkbox" checked></label>
+  <label class="toggle" for="trajectories">Show light rays <input id="trajectories" type="checkbox"></label>
+  <label class="quality" for="quality">Quality <select id="quality"><option value="auto">Automatic</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
+  <div class="actions"><button id="pause" title="Pause or resume (Space)">Pause</button><button id="reset" title="Reset view (R)">↺</button><button id="capture" title="Save PNG image">Photo ↓</button></div>
+</aside>
+<aside id="trajectoryPanel" class="interface" hidden><h2>The paths of photons</h2><canvas id="paths" aria-label="Photon trajectories bending or being captured"></canvas><div class="legend"><span>Escapes</span><span>Captured</span></div><p id="rayExplanation">Rays arrive from the left: the closest cross the horizon; the others bend around it. Orbital plane view, in rₛ.</p></aside>
+<button id="restoreUI" title="Show controls (H)">Show controls · H</button>
+<div id="notice" role="status"></div>
+<div id="error" role="alert"><section><div class="eyebrow">Horizon</div><h2>The simulation could not start</h2><p id="errorText"></p><pre id="errorDetail"></pre></section></div>
+
+<script id="vertex" type="x-shader/x-vertex">#version 300 es
+precision highp float;
+in vec2 aPosition;
+out vec2 vUV;
+void main(){ vUV=aPosition*.5+.5; gl_Position=vec4(aPosition,0.,1.); }
+</script>
+<script id="scene" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+in vec2 vUV;
+out vec4 fragColor;
+uniform vec2 uResolution;
+uniform float uTime;
+uniform vec3 uCamera;
+uniform float uBrightness;
+uniform float uLensing;
+uniform float uStep;
+const float PI=3.14159265359;
+const float TAU=6.28318530718;
+
+float hash(vec2 p){ vec3 q=fract(vec3(p.xyx)*.1031); q+=dot(q,q.yzx+33.33); return fract((q.x+q.y)*q.z); }
+float noise(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+1.),f.x),f.y); }
+float fbm(vec2 p){ return .55*noise(p)+.28*noise(p*2.03+7.)+.13*noise(p*4.11+19.); }
+
+vec3 sky(vec3 d){
+  vec2 uv=vec2(atan(d.z,d.x)/TAU+.5,asin(clamp(d.y,-1.,1.))/PI+.5);
+  float band=exp(-pow(dot(d,normalize(vec3(.32,.87,.38)))*7.,2.));
+  float clouds=fbm(uv*vec2(17.,11.));
+  vec3 color=vec3(.004,.006,.013)+band*mix(vec3(.018,.021,.039),vec3(.050,.037,.032),clouds)*clouds;
+  for(int layer=0;layer<2;layer++){
+    vec2 grid=vec2(420.,210.)*(layer==0?1.:.53);
+    vec2 cell=floor(uv*grid),local=fract(uv*grid);
+    float seed=hash(cell+float(layer)*37.);
+    vec2 center=.18+.64*vec2(hash(cell+13.6),hash(cell+89.1));
+    float size=mix(.032,.095,hash(cell+9.));
+    vec2 aa=clamp(fwidth(uv)*grid,vec2(.015),vec2(.35));
+    float width=length(aa)*.45+size;
+    float dist=length(local-center);
+    float star=exp(-dist*dist/(width*width))*size*size/(width*width);
+    float halo=exp(-dist*dist/(size*size*18.))*.09;
+    float present=step(layer==0?.965:.977,seed);
+    vec3 tint=mix(vec3(.65,.78,1.),vec3(1.,.83,.60),hash(cell+4.));
+    color+=present*(star+halo)*tint*(.65+pow(hash(cell+71.),8.)*5.);
+  }
+  return color;
+}
+
+vec4 disk(vec3 p,float angularMomentumY){
+  float r=length(p.xz);
+  if(r<3.||r>9.5) return vec4(0.);
+  float phi=atan(p.z,p.x);
+  // Differential orbital motion: the inner bands complete a turn sooner.
+  float orbit=uTime*1.4*pow(3./r,1.5);
+  vec2 flow=vec2(r*3.7,(phi-orbit)*5.5);
+  float turbulence=fbm(flow+vec2(noise(flow*.4)*2.,r*.7));
+  float filament=.5+.5*sin(r*30.+turbulence*7.+sin(phi*8.-orbit)*.9);
+  float structure=.57+.60*turbulence+.23*filament;
+  float inner=smoothstep(3.,3.25,r);
+  float outer=1.-smoothstep(7.,9.5,r);
+  float temperature=pow(3./r,.72);
+  vec3 hot=mix(vec3(1.,.19,.025),vec3(1.,.78,.40),temperature);
+  hot=mix(hot,vec3(1.,.92,.76),smoothstep(.82,1.,temperature)*.7);
+  // Combined gravitational/Doppler shift for circular Schwarzschild orbits.
+  // The disk rotates around -y; tracing into the past gives 1 - Omega*L_y.
+  float omega=inversesqrt(2.*r*r*r);
+  float shift=sqrt(1.-1.5/r)/(sqrt(1.-1./length(uCamera))*(1.-omega*angularMomentumY));
+  shift=clamp(shift,.3,1.8);
+  float intensity=4.5*pow(3./r,2.15)*structure*pow(shift,4.)*uBrightness;
+  float opacity=inner*outer*.96;
+  return vec4(hot*intensity*opacity,opacity);
+}
+
+// Exact orbital equation for Schwarzschild null geodesics in affine parameter.
+// r_s=1, E_infinity=1; |p x v|^2 is conserved. The 3-D embedding is orbital,
+// not a Euclidean spatial metric. RK4 controls drift near the photon sphere.
+vec3 acceleration(vec3 p,float h2){ float r2=dot(p,p); return -1.5*h2*p/(r2*r2*sqrt(r2)); }
+void advance(inout vec3 p,inout vec3 v,float h2,float dt){
+  vec3 a1=acceleration(p,h2);
+  vec3 k2v=v+.5*dt*a1;
+  vec3 a2=acceleration(p+.5*dt*v,h2);
+  vec3 k3v=v+.5*dt*a2;
+  vec3 a3=acceleration(p+.5*dt*k2v,h2);
+  vec3 k4v=v+dt*a3;
+  vec3 a4=acceleration(p+dt*k3v,h2);
+  p+=dt*(v+2.*k2v+2.*k3v+k4v)/6.;
+  v+=dt*(a1+2.*a2+2.*a3+a4)/6.;
+}
+
+vec3 trace(vec3 n){
+  vec3 p=uCamera;
+  float r0=length(p);
+  vec3 er=p/r0;
+  vec3 radial=dot(n,er)*er;
+  vec3 v=radial+(n-radial)/sqrt(1.-uLensing/r0);
+  vec3 h=cross(p,v);
+  float h2=dot(h,h)*uLensing;
+  vec3 light=vec3(0.);
+  float transmission=1.;
+  bool captured=false;
+  bool escaped=false;
+  for(int i=0;i<360;i++){
+    float r=length(p);
+    if(r<1.008){captured=true;break;}
+    if(r>55.&&dot(p,v)>0.){escaped=true;break;}
+    float dt=clamp(uStep*r/max(1.,length(v)),.018,4.);
+    vec3 prev=p;
+    advance(p,v,h2,dt);
+    if(prev.y*p.y<0.){
+      vec3 hit=mix(prev,p,prev.y/(prev.y-p.y));
+      vec4 emission=disk(hit,h.y);
+      light+=transmission*emission.rgb;
+      transmission*=1.-emission.a;
+      if(transmission<.012) break;
+    }
+  }
+  if(!captured&&escaped) light+=transmission*sky(normalize(v));
+  return light;
+}
+
+void main(){
+  vec2 screen=(vUV*2.-1.)*vec2(uResolution.x/uResolution.y,1.);
+  vec3 forward=normalize(-uCamera);
+  vec3 right=normalize(cross(forward,vec3(0.,1.,0.)));
+  vec3 up=cross(right,forward);
+  vec3 n=normalize(forward+screen.x*.47*right+screen.y*.47*up);
+  fragColor=vec4(trace(n),1.);
+}
+</script>
+<script id="blur" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+in vec2 vUV;
+out vec4 fragColor;
+uniform sampler2D uTexture;
+uniform vec2 uDirection;
+uniform float uExtract;
+vec3 sampleLight(vec2 uv){ vec3 c=texture(uTexture,uv).rgb; return uExtract>.5?max(c-.65,vec3(0.)):c; }
+void main(){
+  vec3 color=sampleLight(vUV)*.227027;
+  color+=(sampleLight(vUV+uDirection*1.384615)+sampleLight(vUV-uDirection*1.384615))*.316216;
+  color+=(sampleLight(vUV+uDirection*3.230769)+sampleLight(vUV-uDirection*3.230769))*.070270;
+  fragColor=vec4(color,1.);
+}
+</script>
+<script id="compose" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+in vec2 vUV;
+out vec4 fragColor;
+uniform sampler2D uScene;
+uniform sampler2D uBloom;
+vec3 aces(vec3 x){ return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.); }
+void main(){
+  vec3 color=texture(uScene,vUV).rgb+texture(uBloom,vUV).rgb*.48;
+  float vignette=1.-.19*smoothstep(.25,1.1,length((vUV-.5)*1.5));
+  color=pow(aces(color*vignette),vec3(1./2.2));
+  fragColor=vec4(color,1.);
+}
+</script>
+<script>
+'use strict';
+(() => {
+  const $ = id => document.getElementById(id);
+  const canvas = $('universe');
+  let gl, programs, vao, targets, hdr=false, lost=false;
+  let width=0,height=0,last=0,time=0,paused=false,frame=0,frames=0,elapsed=0;
+  let noticeTimer, captureRequested=false;
+  const defaults={elevation:16,distance:16,azimuth:.38,brightness:1.1,speed:1,lensing:true};
+  const state={...defaults};
+  const camera={elevation:16,distance:16,azimuth:.38};
+  const qualityLevels={high:{scale:1,cap:1920,step:.06},medium:{scale:.8,cap:1440,step:.085},low:{scale:.58,cap:1000,step:.12}};
+  let autoLevel=1,quality='auto',slowWindows=0,fastWindows=0,resizePending=true;
+  let rayPaths=[];
+  const pathCanvas=$('paths'), pathContext=pathCanvas.getContext('2d');
+  const notify = message => { $('notice').textContent=message; $('notice').style.opacity='1'; clearTimeout(noticeTimer); noticeTimer=setTimeout(()=>{$('notice').style.opacity='0';},3000); };
+  const showError = (message,detail='') => { $('error').style.display='flex'; $('errorText').textContent=message; $('errorDetail').textContent=detail; };
+  function compile(type,source){
+    const shader=gl.createShader(type); gl.shaderSource(shader,source); gl.compileShader(shader);
+    if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS)) { const log=gl.getShaderInfoLog(shader); gl.deleteShader(shader); throw new Error(log); }
+    return shader;
+  }
+  function program(fragment,uniformNames){
+    const p=gl.createProgram(),vs=compile(gl.VERTEX_SHADER,$('vertex').textContent),fs=compile(gl.FRAGMENT_SHADER,$(fragment).textContent);
+    gl.attachShader(p,vs);gl.attachShader(p,fs);gl.bindAttribLocation(p,0,'aPosition');gl.linkProgram(p);gl.deleteShader(vs);gl.deleteShader(fs);
+    if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    const uniforms={}; for(const name of uniformNames) uniforms[name]=gl.getUniformLocation(p,name);
+    return {p,uniforms};
+  }
+  function target(w,h,useHDR){
+    const texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D,0,useHDR?gl.RGBA16F:gl.RGBA8,w,h,0,gl.RGBA,useHDR?gl.HALF_FLOAT:gl.UNSIGNED_BYTE,null);
+    const fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);
+    if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE) { gl.deleteFramebuffer(fb);gl.deleteTexture(texture);throw new Error('The image buffer is not supported.'); }
+    return {texture,fb,w,h};
+  }
+  function destroyTargets(){ if(targets) for(const t of targets){gl.deleteFramebuffer(t.fb);gl.deleteTexture(t.texture);} targets=null; }
+  function currentQuality(){return qualityLevels[quality==='auto'?['low','medium','high'][autoLevel]:quality];}
+  function resize(){
+    const q=currentQuality(),dpr=Math.min(window.devicePixelRatio||1,1.5);
+    const ratio=Math.min(q.scale*dpr,q.cap/Math.max(innerWidth,innerHeight));
+    const w=Math.max(1,Math.round(innerWidth*ratio)),h=Math.max(1,Math.round(innerHeight*ratio));
+    if(w!==width||h!==height||!targets){
+      width=w;height=h;canvas.width=w;canvas.height=h;destroyTargets();
+      try {targets=[target(w,h,hdr),target(Math.max(1,w>>2),Math.max(1,h>>2),hdr),target(Math.max(1,w>>2),Math.max(1,h>>2),hdr)];}
+      catch(e) {destroyTargets();hdr=false;targets=[target(w,h,false),target(Math.max(1,w>>2),Math.max(1,h>>2),false),target(Math.max(1,w>>2),Math.max(1,h>>2),false)];}
+    }
+    resizePending=false;
+  }
+  function init(){
+    gl=canvas.getContext('webgl2',{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:'high-performance',preserveDrawingBuffer:false});
+    if(!gl) throw new Error('WebGL 2 is required. Open the file in Chrome, Edge or Firefox with hardware acceleration enabled.');
+    hdr=!!gl.getExtension('EXT_color_buffer_float');
+    programs={scene:program('scene',['uResolution','uTime','uCamera','uBrightness','uLensing','uStep']),blur:program('blur',['uTexture','uDirection','uExtract']),compose:program('compose',['uScene','uBloom'])};
+    vao=gl.createVertexArray();gl.bindVertexArray(vao);
+    const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+    gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);resizePending=true;lost=false;
+  }
+  function bindTexture(texture,unit){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,texture);}
+  function pass(p,t){gl.useProgram(p.p);gl.bindFramebuffer(gl.FRAMEBUFFER,t?t.fb:null);gl.viewport(0,0,t?t.w:width,t?t.h:height);}
+  function draw(){
+    const elev=camera.elevation*Math.PI/180,dist=camera.distance,az=camera.azimuth;
+    const p=programs.scene;pass(p,targets[0]);
+    gl.uniform2f(p.uniforms.uResolution,width,height);gl.uniform1f(p.uniforms.uTime,time);
+    gl.uniform3f(p.uniforms.uCamera,Math.sin(az)*Math.cos(elev)*dist,Math.sin(elev)*dist,Math.cos(az)*Math.cos(elev)*dist);
+    gl.uniform1f(p.uniforms.uBrightness,state.brightness);gl.uniform1f(p.uniforms.uLensing,state.lensing?1:0);gl.uniform1f(p.uniforms.uStep,currentQuality().step);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+    const b=programs.blur;pass(b,targets[1]);bindTexture(targets[0].texture,0);gl.uniform1i(b.uniforms.uTexture,0);gl.uniform2f(b.uniforms.uDirection,1/width,0);gl.uniform1f(b.uniforms.uExtract,1);gl.drawArrays(gl.TRIANGLES,0,3);
+    pass(b,targets[2]);bindTexture(targets[1].texture,0);gl.uniform2f(b.uniforms.uDirection,0,1/targets[1].h);gl.uniform1f(b.uniforms.uExtract,0);gl.drawArrays(gl.TRIANGLES,0,3);
+    pass(b,targets[1]);bindTexture(targets[2].texture,0);gl.uniform2f(b.uniforms.uDirection,1/targets[2].w,0);gl.drawArrays(gl.TRIANGLES,0,3);
+    const c=programs.compose;pass(c,null);bindTexture(targets[0].texture,0);bindTexture(targets[1].texture,1);gl.uniform1i(c.uniforms.uScene,0);gl.uniform1i(c.uniforms.uBloom,1);gl.drawArrays(gl.TRIANGLES,0,3);
+  }
+  function sync(){
+    $('inclination').value=state.elevation;$('inclinationValue').textContent=Math.round(state.elevation)+'°';
+    $('distance').value=state.distance;$('distanceValue').textContent=state.distance.toFixed(1)+' rₛ';
+    $('brightness').value=state.brightness;$('brightnessValue').textContent=state.brightness.toFixed(2);
+    $('speed').value=state.speed;$('speedValue').textContent=state.speed.toFixed(2)+'×';$('lensing').checked=state.lensing;
+  }
+  function pause(){paused=!paused;$('pause').textContent=paused?'Resume':'Pause';$('statusText').textContent=paused?'PAUSED':'LIVE';$('status').classList.toggle('paused',paused);}
+  function reset(){Object.assign(state,defaults);time=0;paused=false;$('pause').textContent='Pause';$('statusText').textContent='LIVE';$('status').classList.remove('paused');sync();lens();notify('View reset');}
+  function toggleUI(){document.body.classList.toggle('clean');}
+  async function fullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(e){notify('Use F11 for fullscreen in this browser.');}}
+  function toggleRays(){const show=$('trajectories').checked;$('trajectoryPanel').hidden=!show;if(show){buildPaths();drawPaths();}}
+  function lens(){state.lensing=$('lensing').checked;buildPaths();$('rayExplanation').textContent=state.lensing?'Rays arrive from the left: the closest cross the horizon; the others bend around it. Orbital plane view, in rₛ.':'Lensing disabled: comparison with straight rays and an absorbing sphere of radius rₛ. Enable lensing to restore the physical simulation.';}
+  for(const [id,key] of [['inclination','elevation'],['distance','distance'],['brightness','brightness'],['speed','speed']]) $(''+id).addEventListener('input',e=>{state[key]=Number(e.target.value);sync();});
+  $('pause').addEventListener('click',pause);$('reset').addEventListener('click',reset);$('presentation').addEventListener('click',toggleUI);$('restoreUI').addEventListener('click',toggleUI);$('fullscreen').addEventListener('click',fullscreen);
+  $('lensing').addEventListener('change',lens);$('trajectories').addEventListener('change',toggleRays);
+  $('quality').addEventListener('change',e=>{quality=e.target.value;slowWindows=fastWindows=0;resizePending=true;});
+  $('capture').addEventListener('click',()=>{captureRequested=true;});
+  window.addEventListener('resize',()=>{resizePending=true;});
+  let drag=null;
+  canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
+  canvas.addEventListener('pointermove',e=>{if(!drag)return;state.azimuth-=(e.clientX-drag.x)*.005;state.elevation=Math.max(4,Math.min(85,state.elevation+(e.clientY-drag.y)*.16));drag={x:e.clientX,y:e.clientY};sync();});
+  const endDrag=()=>{drag=null;};canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);canvas.addEventListener('lostpointercapture',endDrag);
+  canvas.addEventListener('wheel',e=>{e.preventDefault();state.distance=Math.max(11,Math.min(28,state.distance+e.deltaY*.012));sync();},{passive:false});
+  document.addEventListener('keydown',e=>{
+    if(e.target.matches('select,textarea,[contenteditable="true"]')||e.ctrlKey||e.altKey||e.metaKey||e.repeat)return;
+    if(e.key===' '&&e.target.matches('input,button'))return;
+    switch(e.key.toLowerCase()){
+      case ' ':e.preventDefault();pause();break;case 'h':toggleUI();break;case 'f':fullscreen();break;case 'r':reset();break;
+      case 'l':$('lensing').checked=!$('lensing').checked;lens();break;case 't':$('trajectories').checked=!$('trajectories').checked;toggleRays();break;
+    }
+  });
+  document.addEventListener('visibilitychange',()=>{last=0;frames=elapsed=0;});
+  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true;notify('Reconnecting to the graphics card…');});
+  canvas.addEventListener('webglcontextrestored',()=>{try{targets=null;init();last=0;}catch(e){showError('The graphics card could not be restored. Reload the page.',e.message);}});
+
+  // The small diagram integrates the same geodesic equation on the CPU.
+  function buildPaths(){
+    rayPaths=[];
+    for(const impact of [-5.5,-4.1,-3.15,-2.75,-2.62,-2.5,-1.7,.8,2.25,2.62,3.15,4.4,5.8]){
+      let p=[-18,impact],v=[1,0];const h2=impact*impact*(state.lensing?1:0),points=[];let captured=false;
+      const accel=q=>{const r=Math.hypot(...q),s=-1.5*h2/r**5;return q.map(x=>x*s);};
+      const add=(a,b,s)=>a.map((x,i)=>x+b[i]*s);
+      for(let i=0;i<1800;i++){
+        const r=Math.hypot(...p);points.push([...p]);if(r<1.008){captured=true;break;}if(r>23&&i>5)break;
+        const dt=Math.min(.16,.035*r/Math.max(1,Math.hypot(...v)));
+        const a1=accel(p),v2=add(v,a1,dt/2),a2=accel(add(p,v,dt/2)),v3=add(v,a2,dt/2),a3=accel(add(p,v2,dt/2)),v4=add(v,a3,dt),a4=accel(add(p,v3,dt));
+        p=p.map((x,j)=>x+dt*(v[j]+2*v2[j]+2*v3[j]+v4[j])/6);v=v.map((x,j)=>x+dt*(a1[j]+2*a2[j]+2*a3[j]+a4[j])/6);
+      }
+      const lengths=[0];for(let i=1;i<points.length;i++)lengths.push(lengths[i-1]+Math.hypot(points[i][0]-points[i-1][0],points[i][1]-points[i-1][1]));
+      rayPaths.push({points,lengths,total:lengths[lengths.length-1],captured});
+    }
+  }
+  function drawPaths(){
+    if($('trajectoryPanel').hidden)return;
+    const rect=pathCanvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2),w=Math.round(rect.width*dpr),h=Math.round(rect.height*dpr);
+    if(pathCanvas.width!==w||pathCanvas.height!==h){pathCanvas.width=w;pathCanvas.height=h;}
+    const ctx=pathContext,s=w/38,cx=w*.52,cy=h*.5;
+    ctx.clearRect(0,0,w,h);ctx.lineWidth=dpr*.5;ctx.strokeStyle='#ffffff0a';
+    for(let x=-16;x<=16;x+=4){ctx.beginPath();ctx.moveTo(cx+x*s,0);ctx.lineTo(cx+x*s,h);ctx.stroke();}
+    for(let y=-8;y<=8;y+=4){ctx.beginPath();ctx.moveTo(0,cy+y*s);ctx.lineTo(w,cy+y*s);ctx.stroke();}
+    ctx.setLineDash([3*dpr,4*dpr]);ctx.strokeStyle='#a9977733';ctx.beginPath();ctx.arc(cx,cy,1.5*s,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+    for(let j=0;j<rayPaths.length;j++){
+      const path=rayPaths[j];ctx.strokeStyle=path.captured?'#6dc4ef4a':'#eab97655';ctx.lineWidth=.7*dpr;ctx.beginPath();
+      path.points.forEach((p,i)=>{const x=cx+p[0]*s,y=cy-p[1]*s;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();
+      for(let k=0;k<2;k++){
+        const distance=((time*3+j*2.7+k*path.total/2)%path.total+path.total)%path.total;
+        let lo=0,hi=path.lengths.length-1;while(lo<hi){const mid=(lo+hi)>>1;if(path.lengths[mid]<distance)lo=mid+1;else hi=mid;}
+        const p=path.points[lo];ctx.fillStyle=path.captured?'#9ddcff':'#ffe1af';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=5*dpr;ctx.beginPath();ctx.arc(cx+p[0]*s,cy-p[1]*s,1.4*dpr,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+      }
+    }
+    ctx.fillStyle='#010207';ctx.beginPath();ctx.arc(cx,cy,s,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#b7a18155';ctx.lineWidth=dpr;ctx.stroke();
+    ctx.font=`${9*dpr}px Segoe UI`;ctx.fillStyle='#737887';ctx.fillText('rₛ = 1',w-45*dpr,h-5*dpr);
+  }
+  function animate(now){
+    requestAnimationFrame(animate);
+    if(lost||document.hidden)return;
+    const rawDt=last?(now-last)/1000:0,dt=Math.min(rawDt,.15);last=now;
+    if(!paused)time+=dt*state.speed;
+    const ease=1-Math.exp(-dt*8);for(const key of ['elevation','distance','azimuth'])camera[key]+=(state[key]-camera[key])*ease;
+    try{if(resizePending)resize();draw();}catch(e){lost=true;showError('The simulation could not render. Try reloading the page with low quality.',e.message);return;}
+    frame++;frames++;elapsed+=rawDt;
+    if($('trajectories').checked&&frame%2===0)drawPaths();
+    if(captureRequested){
+      captureRequested=false;
+      canvas.toBlob(blob=>{if(!blob){notify('The image could not be saved.');return;}const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='horizon-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png';link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);notify('Image saved');},'image/png');
+    }
+    if(elapsed>=1.5){
+      const fps=Math.round(frames/elapsed);$('fps').textContent=fps+' FPS';
+      if(quality==='auto'){
+        slowWindows=fps<38?slowWindows+1:0;fastWindows=fps>57?fastWindows+1:0;
+        if(slowWindows>=2&&autoLevel>0){autoLevel--;resizePending=true;slowWindows=fastWindows=0;}
+        else if(fastWindows>=6&&autoLevel<2){autoLevel++;resizePending=true;slowWindows=fastWindows=0;}
+      }
+      elapsed=frames=0;
+    }
+  }
+  sync();buildPaths();
+  try{init();requestAnimationFrame(animate);}catch(e){showError('Open this file in a modern browser with hardware acceleration enabled. The simulation requires WebGL 2.',e.message);}
+})();
+</script>
+</body>
+</html>

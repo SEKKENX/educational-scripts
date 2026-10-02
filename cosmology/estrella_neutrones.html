@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Pulsar · Neutron star simulation</title>
+<style>
+  :root { --ink:#e9eef7; --dim:#9096a7; --gold:#8ccfff; --line:rgba(174,205,246,.15); }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; overflow:hidden; background:#030409; color:var(--ink); font-family:Segoe UI,Arial,sans-serif; }
+  button,input,select { font:inherit; }
+  button { cursor:pointer; }
+  #universe { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
+  #universe:active { cursor:grabbing; }
+  .interface { transition:opacity .35s,transform .35s; }
+  body.clean .interface { opacity:0; pointer-events:none; }
+  header { position:absolute; top:38px; left:44px; pointer-events:none; }
+  .eyebrow { font-size:10px; font-weight:600; letter-spacing:.26em; color:var(--gold); text-transform:uppercase; }
+  h1 { margin:12px 0 9px; font-family:Georgia,serif; font-size:clamp(36px,5vw,64px); font-weight:400; letter-spacing:-.04em; line-height:1; text-shadow:0 2px 16px #0009; }
+  .subtitle { font-size:13px; color:#b2bfd3; letter-spacing:.03em; margin:0; text-shadow:0 1px 7px #000,0 0 16px #0009; }
+  .status { position:absolute; top:42px; right:40px; display:flex; align-items:center; gap:10px; font-size:10px; letter-spacing:.16em; color:#b3b0ae; }
+  .dot { width:6px; height:6px; background:#8ccfff; border-radius:50%; box-shadow:0 0 12px #8ccfff88; }
+  .status.paused .dot { background:#777; box-shadow:none; }
+  .model { position:absolute; bottom:36px; left:44px; max-width:340px; pointer-events:none; }
+  .model strong { font-size:10px; letter-spacing:.18em; color:#c2bdb5; font-weight:500; }
+  .model p { font-size:12px; line-height:1.65; color:#85858f; margin:9px 0 18px; }
+  .facts { display:flex; gap:28px; }
+  .fact span { display:block; color:#6d6e79; font-size:9px; text-transform:uppercase; letter-spacing:.12em; margin-bottom:5px; }
+  .fact b { font-family:Georgia,serif; font-size:17px; font-weight:400; color:#c8b9a4; }
+  .panel { position:absolute; right:32px; bottom:32px; width:284px; border:1px solid var(--line); background:linear-gradient(140deg,rgba(13,20,35,.82),rgba(7,11,22,.72)); backdrop-filter:blur(18px); border-radius:16px; padding:20px 21px 16px; box-shadow:0 14px 60px #0004; }
+  .panel-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .panel-title { font-size:10px; text-transform:uppercase; letter-spacing:.18em; color:#c0b7aa; }
+  #fps { font-size:10px; color:#777e89; font-variant-numeric:tabular-nums; }
+  .slider { margin:0 0 15px; }
+  .slider label { display:flex; justify-content:space-between; font-size:11px; color:#b6b2ae; margin-bottom:8px; }
+  output { color:var(--gold); font-variant-numeric:tabular-nums; }
+  input[type=range] { display:block; width:100%; height:3px; margin:0; appearance:none; background:#333139; border-radius:8px; cursor:pointer; accent-color:var(--gold); }
+  input[type=range]::-webkit-slider-thumb { appearance:none; width:10px; height:10px; border-radius:50%; background:var(--gold); box-shadow:0 0 10px #8ccfff33; }
+  input[type=range]::-moz-range-thumb { width:10px; height:10px; border:none; border-radius:50%; background:var(--gold); }
+  .toggle { display:flex; align-items:center; justify-content:space-between; font-size:11px; color:#b6b2ae; margin-top:14px; cursor:pointer; }
+  .toggle input { appearance:none; width:29px; height:16px; border-radius:20px; background:#32343d; position:relative; margin:0; cursor:pointer; transition:background .2s; }
+  .toggle input:after { content:''; position:absolute; width:10px; height:10px; top:3px; left:3px; border-radius:50%; background:#999; transition:transform .2s,background .2s; }
+  .toggle input:checked { background:#395f84; }
+  .toggle input:checked:after { transform:translateX(13px); background:#b2ddff; }
+  .quality { display:flex; align-items:center; justify-content:space-between; margin-top:16px; font-size:11px; color:#b6b2ae; }
+  select { background:#141e2e; color:#b4c8e3; border:1px solid var(--line); border-radius:5px; padding:4px 6px; font-size:10px; }
+  .actions { display:flex; gap:7px; margin-top:18px; border-top:1px solid var(--line); padding-top:15px; }
+  .actions button { border:1px solid var(--line); border-radius:7px; background:#ffffff04; color:#b5b0aa; font-size:11px; padding:8px 10px; }
+  .actions button:first-child { color:#aed9ff; flex:1; }
+  button:hover { background:#ffffff0b; color:#fff; }
+  button:focus-visible,input:focus-visible,select:focus-visible { outline:2px solid var(--gold); outline-offset:4px; }
+  .hint { position:absolute; left:50%; top:38px; transform:translateX(-50%); display:flex; gap:8px; }
+  .hint button { background:#0e101880; color:#8d8e99; border:1px solid #ffffff0b; padding:7px 11px; border-radius:30px; font-size:10px; backdrop-filter:blur(8px); }
+  #restoreUI { position:absolute; right:22px; bottom:18px; border:1px solid #ffffff16; border-radius:25px; color:#9b9997; background:#080a12aa; font-size:11px; padding:8px 14px; opacity:0; pointer-events:none; transition:opacity .3s; }
+  body.clean #restoreUI { opacity:.55; pointer-events:auto; }
+  #restoreUI:hover { opacity:1; }
+  #trajectoryPanel { position:absolute; left:44px; bottom:164px; width:320px; border:1px solid var(--line); background:#080f1bd9; backdrop-filter:blur(12px); border-radius:13px; padding:17px; }
+  #trajectoryPanel[hidden] { display:none; }
+  #trajectoryPanel h2 { font-size:10px; letter-spacing:.18em; text-transform:uppercase; font-weight:500; color:#a6cff5; margin:0 0 8px; }
+  #trajectoryPanel p { font-size:10px; color:#9597a4; line-height:1.5; margin:7px 0 0; }
+  #paths { display:block; width:100%; height:80px; }
+  .legend { display:flex; gap:18px; font-size:9px; color:#a1a0a8; margin-top:8px; }
+  .legend span:before { content:''; display:inline-block; width:12px; height:2px; margin-right:6px; vertical-align:middle; background:#8ccfff; }
+  .legend span:last-child:before { background:#a88fff; }
+  #notice { position:absolute; top:85px; right:32px; font-size:11px; color:#adceec; background:#0e1727cc; border:1px solid var(--line); border-radius:8px; padding:10px 15px; opacity:0; transition:opacity .3s; pointer-events:none; max-width:320px; }
+  #error { display:none; position:absolute; inset:0; align-items:center; justify-content:center; background:#090c16; padding:30px; }
+  #error section { max-width:560px; }
+  #error h2 { font-family:Georgia,serif; font-size:32px; font-weight:400; }
+  #error p { line-height:1.7; color:#b5b5bf; }
+  #error pre { white-space:pre-wrap; color:#adceec; font-size:11px; }
+  .pulse-head { display:flex; justify-content:space-between; align-items:center; }
+  #signalValue { color:#a5d7ff; font-size:10px; font-variant-numeric:tabular-nums; }
+  .model p { color:#828eaa; }
+  .fact b { color:#b8d0ec; }
+  @media(max-width:800px) { header { top:25px; left:25px; } .status { top:28px; right:25px; } .hint { top:auto; bottom:22px; left:25px; transform:none; } .model { display:none; } .panel { right:18px; bottom:18px; width:244px; padding:16px; } #trajectoryPanel { left:20px; bottom:75px; width:280px; } .hint button:nth-child(2) { display:none; } }
+  @media(max-width:600px) { .subtitle { max-width:190px; font-size:11px; line-height:1.5; } .status { font-size:8px; } h1 { font-size:42px; } .panel { width:220px; padding:13px; } .slider { margin-bottom:11px; } .hint { gap:5px; bottom:18px; left:15px; } .hint button { font-size:9px; padding:7px 8px; } #trajectoryPanel { left:15px; top:132px; bottom:auto; width:210px; padding:12px; } #trajectoryPanel p,.legend { display:none; } #paths { height:55px; } }
+  @media(max-height:660px) { header { top:20px; left:25px; } h1 { font-size:42px; } .panel { bottom:15px; right:20px; padding:13px 16px; } .panel-head { margin-bottom:14px; } .slider { margin-bottom:10px; } .toggle { margin-top:10px; } .quality { margin-top:10px; } .actions { margin-top:12px; padding-top:10px; } #trajectoryPanel { left:25px; bottom:75px; } .model { display:none; } }
+</style>
+</head>
+<body>
+<canvas id="universe" aria-label="Interactive neutron star with rotating pulsar beams and magnetic field lines. Drag to orbit the camera and scroll to zoom."></canvas>
+<header class="interface"><h1>Pulsar</h1><p class="subtitle">A lighthouse among the stars.</p></header>
+<div class="status interface" id="status"><span class="dot"></span><span id="statusText">LIVE</span></div>
+<nav class="hint interface" aria-label="Presentation"><button id="presentation" title="Hide controls (H)">Presentation mode · H</button><button id="fullscreen" title="Fullscreen (F)">Fullscreen ↗</button></nav>
+<aside class="model interface"><strong>NEUTRON STAR / OBLIQUE ROTATOR</strong><p>A dense, glowing surface beneath a rotating magnetic field. Its beams sweep through space, while gravity bends the light.</p><div class="facts"><div class="fact"><span>Mass</span><b id="massValue">1.40 M☉</b></div><div class="fact"><span>Radius</span><b>12 km</b></div><div class="fact"><span>Compactness</span><b id="compactnessFact">0.345</b></div></div></aside>
+<aside class="panel interface" aria-label="Simulation controls">
+  <div class="panel-head"><span class="panel-title">Observatory</span><span id="fps">Starting…</span></div>
+  <div class="slider"><label for="inclination">Camera elevation <output id="inclinationValue">26°</output></label><input id="inclination" type="range" min="-75" max="85" value="26" step="1"></div>
+  <div class="slider"><label for="distance">Distance <output id="distanceValue">8.5 R</output></label><input id="distance" type="range" min="6" max="16" value="8.5" step="0.1"></div>
+  <div class="slider"><label for="speed">Spin speed <output id="speedValue">0.65×</output></label><input id="speed" type="range" min="0" max="2" value="0.65" step="0.05"></div>
+  <div class="slider"><label for="tilt">Magnetic tilt <output id="tiltValue">58°</output></label><input id="tilt" type="range" min="0" max="90" value="58" step="1"></div>
+  <div class="slider"><label for="brightness">Brightness <output id="brightnessValue">1.00</output></label><input id="brightness" type="range" min="0.3" max="2.5" value="1" step="0.05"></div>
+  <div class="slider"><label for="compactness">Compactness · rₛ/R <output id="compactnessValue">0.345</output></label><input id="compactness" type="range" min="0.15" max="0.46" value="0.34455" step="0.001"></div>
+  <label class="toggle" for="lensing">Light bending <input id="lensing" type="checkbox" checked></label>
+  <label class="toggle" for="magnetic">Magnetic field <input id="magnetic" type="checkbox" checked></label>
+  <label class="toggle" for="trajectories">Pulse monitor <input id="trajectories" type="checkbox" checked></label>
+  <label class="quality" for="quality">Quality <select id="quality"><option value="auto">Automatic</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
+  <div class="actions"><button id="pause" title="Pause or resume (Space)">Pause</button><button id="reset" title="Reset view (R)">↺</button><button id="capture" title="Save PNG image">Photo ↓</button></div>
+</aside>
+<aside id="trajectoryPanel" class="interface"><div class="pulse-head"><h2>Relative beam signal</h2><span id="signalValue">0.00</span></div><canvas id="paths" aria-label="Relative pulsar beam signal over one rotation at the current viewing angle"></canvas><div class="legend"><span>North pole</span><span>South pole</span></div><p>One rotation at your current viewing angle. Peaks mark a beam crossing your line of sight.</p></aside>
+<button id="restoreUI" title="Show controls (H)">Show controls · H</button>
+<div id="notice" role="status"></div>
+<div id="error" role="alert"><section><div class="eyebrow">Pulsar</div><h2>The simulation could not start</h2><p id="errorText"></p><pre id="errorDetail"></pre></section></div>
+
+<script id="vertex" type="x-shader/x-vertex">#version 300 es
+precision highp float;
+in vec2 aPosition;
+out vec2 vUV;
+void main(){ vUV=aPosition*.5+.5; gl_Position=vec4(aPosition,0.,1.); }
+</script>
+<script id="scene" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+in vec2 vUV;
+out vec4 fragColor;
+uniform vec2 uResolution;
+uniform float uTime;
+uniform vec3 uCamera;
+uniform vec3 uMagneticAxis;
+uniform float uCompactness;
+uniform float uBrightness;
+uniform float uLensing;
+uniform float uStep;
+const float PI=3.14159265359;
+const float TAU=6.28318530718;
+float hash(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
+float hash3(vec3 p){p=fract(p*.1031);p+=dot(p,p.yzx+33.33);return fract((p.x+p.y)*p.z);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+1.),f.x),f.y);}
+float noise3(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(mix(hash3(i),hash3(i+vec3(1,0,0)),f.x),mix(hash3(i+vec3(0,1,0)),hash3(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash3(i+vec3(0,0,1)),hash3(i+vec3(1,0,1)),f.x),mix(hash3(i+vec3(0,1,1)),hash3(i+1.),f.x),f.y),f.z);}
+float fbm(vec2 p){return .55*noise(p)+.28*noise(p*2.03+7.)+.13*noise(p*4.11+19.);}
+float fbm3(vec3 p){return .55*noise3(p)+.28*noise3(p*2.03+7.)+.13*noise3(p*4.11+19.);}
+vec3 rotateY(vec3 p,float a){float c=cos(a),s=sin(a);return vec3(c*p.x+s*p.z,p.y,-s*p.x+c*p.z);}
+vec3 sky(vec3 d){
+  vec2 uv=vec2(atan(d.z,d.x)/TAU+.5,asin(clamp(d.y,-1.,1.))/PI+.5);
+  float band=exp(-pow(dot(d,normalize(vec3(.32,.87,.38)))*6.,2.));
+  float clouds=fbm(uv*vec2(17.,11.));
+  vec3 color=vec3(.003,.005,.011)+band*mix(vec3(.014,.021,.046),vec3(.024,.017,.038),clouds)*clouds;
+  for(int layer=0;layer<2;layer++){
+    vec2 grid=vec2(430.,215.)*(layer==0?1.:.53);
+    vec2 cell=floor(uv*grid),local=fract(uv*grid);
+    float seed=hash(cell+float(layer)*37.);
+    vec2 center=.18+.64*vec2(hash(cell+13.6),hash(cell+89.1));
+    float size=mix(.025,.075,hash(cell+9.));
+    vec2 aa=clamp(fwidth(uv)*grid,vec2(.015),vec2(.35));
+    float width=length(aa)*.45+size;
+    float dist=length(local-center);
+    float star=exp(-dist*dist/(width*width))*size*size/(width*width);
+    float halo=exp(-dist*dist/(size*size*18.))*.055;
+    float present=step(layer==0?.965:.977,seed);
+    vec3 tint=mix(vec3(.65,.78,1.),vec3(1.,.83,.64),hash(cell+4.));
+    color+=present*(star+halo)*tint*(.7+pow(hash(cell+71.),8.)*4.);
+  }
+  return color;
+}
+vec3 surface(vec3 p,vec3 velocity){
+  vec3 normal=normalize(p);
+  vec3 body=rotateY(normal,-uTime*.85);
+  float thermal=fbm3(body*8.5+fbm3(body*3.)*2.);
+  float grain=noise3(body*58.);
+  float strands=pow(.5+.5*sin(thermal*36.+body.y*17.+noise3(body*22.)*3.),3.);
+  vec3 cool=vec3(.055,.19,.59),hot=vec3(.38,.82,1.45);
+  vec3 color=mix(cool,hot,clamp(thermal*.9+strands*.30,0.,1.));
+  color*=1.2+.25*grain;
+  float mu=clamp(-dot(velocity,normal),0.,1.);
+  color*=.52+.48*sqrt(mu);
+  float poles=exp(-(1.-abs(dot(normal,uMagneticAxis)))*95.);
+  color+=vec3(.6,1.1,1.7)*poles*6.;
+  color+=vec3(.07,.22,.43)*pow(1.-mu,5.);
+  float shift=sqrt((1.-uCompactness)/(1.-uCompactness/length(uCamera)));
+  return color*3.1*pow(shift,4.)*uBrightness;
+}
+// Illustrative scattering makes the pulsar's invisible radiation cones visible.
+// These are geometric lighthouse guides, not a radiative-transfer solution.
+vec3 beamEmission(vec3 p){
+  float along=dot(p,uMagneticAxis),h=abs(along),r2=dot(p,p);
+  if(h<.93||h>8.||r2>70.)return vec3(0.);
+  float rho2=max(r2-along*along,0.);
+  float width=.05+h*.20;
+  float envelope=smoothstep(.93,1.24,h)*(1.-smoothstep(5.5,8.,h));
+  float density=exp(-rho2/(width*width))*envelope/(1.+.18*h*h);
+  float shimmer=.88+.12*sin(h*8.-uTime*4.);
+  vec3 color=along>0.?vec3(.16,.68,1.35):vec3(.46,.26,1.15);
+  return color*density*shimmer*2.8*uBrightness;
+}
+// Exact exterior Schwarzschild null geodesics, in R=1 and r_s=compactness.
+// A photon stops on the stellar surface; there is no exterior event horizon.
+vec3 acceleration(vec3 p,float h2){float r2=dot(p,p);return -1.5*uCompactness*uLensing*h2*p/(r2*r2*sqrt(r2));}
+void advance(inout vec3 p,inout vec3 v,float h2,float dt){
+  vec3 a1=acceleration(p,h2),k2v=v+.5*dt*a1,a2=acceleration(p+.5*dt*v,h2);
+  vec3 k3v=v+.5*dt*a2,a3=acceleration(p+.5*dt*k2v,h2);
+  vec3 k4v=v+dt*a3,a4=acceleration(p+dt*k3v,h2);
+  p+=dt*(v+2.*k2v+2.*k3v+k4v)/6.;v+=dt*(a1+2.*a2+2.*a3+a4)/6.;
+}
+vec4 trace(vec3 n){
+  vec3 p=uCamera,er=normalize(p),radial=dot(n,er)*er;
+  vec3 v=radial+(n-radial)/sqrt(1.-uCompactness*uLensing/length(p));
+  vec3 h=cross(p,v);float h2=dot(h,h);
+  vec3 light=vec3(0.);bool escaped=false;
+  for(int i=0;i<180;i++){
+    float r=length(p);
+    if(r>28.&&dot(p,v)>0.){escaped=true;break;}
+    float dt=clamp(uStep*r/max(1.,length(v)),.018,2.4);
+    vec3 prev=p,prevV=v;advance(p,v,h2,dt);
+    if(dot(p,p)<=1.){
+      vec3 segment=p-prev;float a=dot(segment,segment),b=dot(prev,segment);
+      float f=clamp((-b-sqrt(max(b*b-a*(dot(prev,prev)-1.),0.)))/a,0.,1.);
+      vec3 hit=normalize(prev+segment*f),hitV=mix(prevV,v,f);
+      light+=beamEmission(mix(prev,hit,.5))*dt*f;
+      light+=surface(hit,hitV);
+      // Alpha stores approximate surface depth for occluding magnetic guides.
+      return vec4(light,length(hit-uCamera)/100.);
+    }
+    if(r<8.5)light+=beamEmission((prev+p)*.5)*dt;
+  }
+  if(escaped)light+=sky(normalize(v));
+  return vec4(light,1.);
+}
+void main(){
+  vec2 screen=(vUV*2.-1.)*vec2(uResolution.x/uResolution.y,1.);
+  vec3 forward=normalize(-uCamera),right=normalize(cross(forward,vec3(0.,1.,0.))),up=cross(right,forward);
+  vec3 n=normalize(forward+screen.x*.47*right+screen.y*.47*up);
+  fragColor=trace(n);
+}
+</script>
+<script id="fieldVertex" type="x-shader/x-vertex">#version 300 es
+precision highp float;
+layout(location=0) in vec3 aFrom;
+layout(location=1) in vec3 aTo;
+layout(location=2) in vec2 aCorner;
+uniform vec3 uCamera;
+uniform vec3 uMagneticAxis;
+uniform vec3 uMagneticTangent;
+uniform vec2 uResolution;
+out vec3 vWorld;
+out float vSide;
+out float vRadius;
+vec3 world(vec3 p){return uMagneticTangent*p.x+uMagneticAxis*p.y+cross(uMagneticTangent,uMagneticAxis)*p.z;}
+vec2 project(vec3 p){vec3 f=normalize(-uCamera),r=normalize(cross(f,vec3(0,1,0))),up=cross(r,f),q=p-uCamera;float depth=max(dot(q,f),.1);return vec2(dot(q,r)/(depth*.47*uResolution.x/uResolution.y),dot(q,up)/(depth*.47));}
+void main(){
+  vec3 from=world(aFrom),to=world(aTo);
+  vec2 a=project(from),b=project(to),screenDelta=(b-a)*uResolution;
+  float len=length(screenDelta);vec2 normal=len>.0001?vec2(-screenDelta.y,screenDelta.x)/len:vec2(0,1);
+  vec2 offset=normal*aCorner.y*2.1/uResolution;
+  vec2 xy=mix(a,b,aCorner.x)+offset;
+  vWorld=mix(from,to,aCorner.x);vRadius=length(vWorld);vSide=aCorner.y;
+  gl_Position=vec4(xy,0.,1.);
+}
+</script>
+<script id="fieldFragment" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+in vec3 vWorld;
+in float vSide;
+in float vRadius;
+out vec4 fragColor;
+uniform sampler2D uSurface;
+uniform vec2 uResolution;
+uniform vec3 uCamera;
+uniform float uTime;
+uniform float uBrightness;
+void main(){
+  float depth=texture(uSurface,gl_FragCoord.xy/uResolution).a;
+  if(length(vWorld-uCamera)/100.>depth+.0015)discard;
+  float edge=1.-smoothstep(.4,1.,abs(vSide));
+  float falloff=1.-smoothstep(3.3,5.,vRadius);
+  float flow=.70+.30*pow(.5+.5*sin(vRadius*9.-uTime*3.),4.);
+  vec3 color=mix(vec3(.18,.70,1.2),vec3(.45,.31,.9),smoothstep(1.5,4.,vRadius));
+  fragColor=vec4(color*edge*falloff*flow*.80*uBrightness,0.);
+}
+</script>
+<script id="blur" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+in vec2 vUV;
+out vec4 fragColor;
+uniform sampler2D uTexture;
+uniform vec2 uDirection;
+uniform float uExtract;
+vec3 sampleLight(vec2 uv){ vec3 c=texture(uTexture,uv).rgb; return uExtract>.5?max(c-.65,vec3(0.)):c; }
+void main(){
+  vec3 color=sampleLight(vUV)*.227027;
+  color+=(sampleLight(vUV+uDirection*1.384615)+sampleLight(vUV-uDirection*1.384615))*.316216;
+  color+=(sampleLight(vUV+uDirection*3.230769)+sampleLight(vUV-uDirection*3.230769))*.070270;
+  fragColor=vec4(color,1.);
+}
+</script>
+<script id="compose" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+in vec2 vUV;
+out vec4 fragColor;
+uniform sampler2D uScene;
+uniform sampler2D uBloom;
+vec3 aces(vec3 x){ return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.); }
+void main(){
+  vec3 color=texture(uScene,vUV).rgb+texture(uBloom,vUV).rgb*.48;
+  float vignette=1.-.19*smoothstep(.25,1.1,length((vUV-.5)*1.5));
+  color=pow(aces(color*vignette),vec3(1./2.2));
+  fragColor=vec4(color,1.);
+}
+</script>
+<script>
+'use strict';
+(() => {
+  const $=id=>document.getElementById(id),canvas=$('universe');
+  let gl,programs,vao,fieldVao,fieldCount=0,targets,hdr=false,lost=false;
+  let width=0,height=0,last=0,time=.85,paused=false,frame=0,frames=0,elapsed=0;
+  let noticeTimer,captureRequested=false,resizePending=true;
+  const defaults={elevation:26,distance:8.5,azimuth:.48,brightness:1,speed:.65,tilt:58,compactness:.344546,lensing:true,magnetic:true};
+  const state={...defaults},camera={elevation:26,distance:8.5,azimuth:.48};
+  const qualityLevels={high:{scale:1,cap:1920,step:.06},medium:{scale:.8,cap:1440,step:.085},low:{scale:.58,cap:1000,step:.12}};
+  let autoLevel=1,autoCeiling=2,quality='auto',slowWindows=0,fastWindows=0;
+  const pathCanvas=$('paths'),pathContext=pathCanvas.getContext('2d');
+  const notify=message=>{$('notice').textContent=message;$('notice').style.opacity='1';clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>{$('notice').style.opacity='0';},3000);};
+  const showError=(message,detail='')=>{$('error').style.display='flex';$('errorText').textContent=message;$('errorDetail').textContent=detail;};
+  function compile(type,source){const shader=gl.createShader(type);gl.shaderSource(shader,source);gl.compileShader(shader);if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS)){const log=gl.getShaderInfoLog(shader);gl.deleteShader(shader);throw new Error(log);}return shader;}
+  function program(fragment,uniformNames,vertex='vertex'){
+    const p=gl.createProgram(),vs=compile(gl.VERTEX_SHADER,$(vertex).textContent),fs=compile(gl.FRAGMENT_SHADER,$(fragment).textContent);
+    gl.attachShader(p,vs);gl.attachShader(p,fs);if(vertex==='vertex')gl.bindAttribLocation(p,0,'aPosition');gl.linkProgram(p);gl.deleteShader(vs);gl.deleteShader(fs);
+    if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
+    const uniforms={};for(const name of uniformNames)uniforms[name]=gl.getUniformLocation(p,name);return {p,uniforms};
+  }
+  function target(w,h,useHDR){
+    const texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D,0,useHDR?gl.RGBA16F:gl.RGBA8,w,h,0,gl.RGBA,useHDR?gl.HALF_FLOAT:gl.UNSIGNED_BYTE,null);
+    const fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);
+    if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE){gl.deleteFramebuffer(fb);gl.deleteTexture(texture);throw new Error('The image buffer is not supported.');}return {texture,fb,w,h};
+  }
+  function destroyTargets(){if(targets)for(const t of targets){gl.deleteFramebuffer(t.fb);gl.deleteTexture(t.texture);}targets=null;}
+  function allocateTargets(w,h,useHDR){
+    const result=[];try{for(const [tw,th]of [[w,h],[Math.max(1,w>>2),Math.max(1,h>>2)],[Math.max(1,w>>2),Math.max(1,h>>2)],[w,h]])result.push(target(tw,th,useHDR));return result;}
+    catch(e){for(const t of result){gl.deleteFramebuffer(t.fb);gl.deleteTexture(t.texture);}throw e;}
+  }
+  function currentQuality(){return qualityLevels[quality==='auto'?['low','medium','high'][autoLevel]:quality];}
+  function resize(){
+    const q=currentQuality(),dpr=Math.min(devicePixelRatio||1,1.5),ratio=Math.min(q.scale*dpr,q.cap/Math.max(innerWidth,innerHeight));
+    const w=Math.max(1,Math.round(innerWidth*ratio)),h=Math.max(1,Math.round(innerHeight*ratio));
+    if(w!==width||h!==height||!targets){width=w;height=h;canvas.width=w;canvas.height=h;destroyTargets();try{targets=allocateTargets(w,h,hdr);}catch(e){hdr=false;targets=allocateTargets(w,h,false);}}
+    resizePending=false;
+  }
+  // Thin ribbon meshes display stable, antialiased classical dipole guides.
+  // In magnetic coordinates, each closed field line has r=L*sin(theta)^2.
+  function buildFieldMesh(){
+    const vertices=[];
+    for(const L of [1.5,2.2,3.2,4.4])for(let meridian=0;meridian<10;meridian++){
+      const phi=meridian*Math.PI*2/10,start=Math.asin(Math.sqrt(1/L)),end=Math.PI-start;
+      const point=t=>{const r=L*Math.sin(t)**2;return [r*Math.sin(t)*Math.cos(phi),r*Math.cos(t),r*Math.sin(t)*Math.sin(phi)];};
+      for(let j=0;j<128;j++){
+        const a=point(start+(end-start)*j/128),b=point(start+(end-start)*(j+1)/128);
+        for(const corner of [[0,-1],[1,-1],[1,1],[0,-1],[1,1],[0,1]])vertices.push(...a,...b,...corner);
+      }
+    }
+    fieldCount=vertices.length/8;fieldVao=gl.createVertexArray();gl.bindVertexArray(fieldVao);
+    const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,32,0);
+    gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,3,gl.FLOAT,false,32,12);
+    gl.enableVertexAttribArray(2);gl.vertexAttribPointer(2,2,gl.FLOAT,false,32,24);
+  }
+  function init(){
+    gl=canvas.getContext('webgl2',{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:'high-performance',preserveDrawingBuffer:false});
+    if(!gl)throw new Error('WebGL 2 is required. Open the file in Chrome, Edge or Firefox with hardware acceleration enabled.');
+    hdr=!!gl.getExtension('EXT_color_buffer_float');
+    programs={scene:program('scene',['uResolution','uTime','uCamera','uMagneticAxis','uCompactness','uBrightness','uLensing','uStep']),field:program('fieldFragment',['uCamera','uMagneticAxis','uMagneticTangent','uResolution','uSurface','uTime','uBrightness'],'fieldVertex'),blur:program('blur',['uTexture','uDirection','uExtract']),compose:program('compose',['uScene','uBloom'])};
+    vao=gl.createVertexArray();gl.bindVertexArray(vao);const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+    buildFieldMesh();gl.bindVertexArray(vao);gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);resizePending=true;lost=false;
+  }
+  function cameraPosition(){const e=camera.elevation*Math.PI/180,d=camera.distance,a=camera.azimuth;return [Math.sin(a)*Math.cos(e)*d,Math.sin(e)*d,Math.cos(a)*Math.cos(e)*d];}
+  function magneticBasis(phase=time*.85){const t=state.tilt*Math.PI/180,s=Math.sin(t),c=Math.cos(t),cp=Math.cos(phase),sp=Math.sin(phase);return {axis:[s*cp,c,-s*sp],tangent:[c*cp,-s,-c*sp]};}
+  function bindTexture(texture,unit){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,texture);}
+  function pass(p,t){gl.useProgram(p.p);gl.bindFramebuffer(gl.FRAMEBUFFER,t?t.fb:null);gl.viewport(0,0,t?t.w:width,t?t.h:height);}
+  function draw(){
+    gl.bindVertexArray(vao);const pos=cameraPosition(),basis=magneticBasis(),p=programs.scene;pass(p,targets[0]);
+    gl.uniform2f(p.uniforms.uResolution,width,height);gl.uniform1f(p.uniforms.uTime,time);gl.uniform3fv(p.uniforms.uCamera,pos);gl.uniform3fv(p.uniforms.uMagneticAxis,basis.axis);gl.uniform1f(p.uniforms.uCompactness,state.compactness);gl.uniform1f(p.uniforms.uBrightness,state.brightness);gl.uniform1f(p.uniforms.uLensing,state.lensing?1:0);gl.uniform1f(p.uniforms.uStep,currentQuality().step);gl.drawArrays(gl.TRIANGLES,0,3);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER,targets[0].fb);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,targets[3].fb);gl.blitFramebuffer(0,0,width,height,0,0,width,height,gl.COLOR_BUFFER_BIT,gl.NEAREST);
+    if(state.magnetic){
+      const f=programs.field;pass(f,targets[3]);gl.bindVertexArray(fieldVao);bindTexture(targets[0].texture,0);gl.uniform1i(f.uniforms.uSurface,0);gl.uniform2f(f.uniforms.uResolution,width,height);gl.uniform3fv(f.uniforms.uCamera,pos);gl.uniform3fv(f.uniforms.uMagneticAxis,basis.axis);gl.uniform3fv(f.uniforms.uMagneticTangent,basis.tangent);gl.uniform1f(f.uniforms.uTime,time);gl.uniform1f(f.uniforms.uBrightness,state.brightness);
+      gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);gl.drawArrays(gl.TRIANGLES,0,fieldCount);gl.disable(gl.BLEND);gl.bindVertexArray(vao);
+    }
+    const b=programs.blur;pass(b,targets[1]);bindTexture(targets[3].texture,0);gl.uniform1i(b.uniforms.uTexture,0);gl.uniform2f(b.uniforms.uDirection,1/width,0);gl.uniform1f(b.uniforms.uExtract,1);gl.drawArrays(gl.TRIANGLES,0,3);
+    pass(b,targets[2]);bindTexture(targets[1].texture,0);gl.uniform2f(b.uniforms.uDirection,0,1/targets[1].h);gl.uniform1f(b.uniforms.uExtract,0);gl.drawArrays(gl.TRIANGLES,0,3);
+    pass(b,targets[1]);bindTexture(targets[2].texture,0);gl.uniform2f(b.uniforms.uDirection,1/targets[2].w,0);gl.drawArrays(gl.TRIANGLES,0,3);
+    const c=programs.compose;pass(c,null);bindTexture(targets[3].texture,0);bindTexture(targets[1].texture,1);gl.uniform1i(c.uniforms.uScene,0);gl.uniform1i(c.uniforms.uBloom,1);gl.drawArrays(gl.TRIANGLES,0,3);
+  }
+  function sync(){
+    $('inclination').value=state.elevation;$('inclinationValue').textContent=Math.round(state.elevation)+'°';
+    $('distance').value=state.distance;$('distanceValue').textContent=state.distance.toFixed(1)+' R';
+    $('brightness').value=state.brightness;$('brightnessValue').textContent=state.brightness.toFixed(2);
+    $('speed').value=state.speed;$('speedValue').textContent=state.speed.toFixed(2)+'×';
+    $('tilt').value=state.tilt;$('tiltValue').textContent=Math.round(state.tilt)+'°';
+    $('compactness').value=state.compactness;$('compactnessValue').textContent=state.compactness.toFixed(3);$('compactnessFact').textContent=state.compactness.toFixed(3);$('massValue').textContent=(state.compactness*12/2.95325).toFixed(2)+' M☉';
+    $('lensing').checked=state.lensing;$('magnetic').checked=state.magnetic;
+  }
+  function pause(){paused=!paused;$('pause').textContent=paused?'Resume':'Pause';$('statusText').textContent=paused?'PAUSED':'LIVE';$('status').classList.toggle('paused',paused);}
+  function reset(){Object.assign(state,defaults);time=.85;paused=false;$('pause').textContent='Pause';$('statusText').textContent='LIVE';$('status').classList.remove('paused');sync();drawPaths();notify('View reset');}
+  function toggleUI(){document.body.classList.toggle('clean');}
+  async function fullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(e){notify('Use F11 for fullscreen in this browser.');}}
+  function toggleRays(){$('trajectoryPanel').hidden=!$('trajectories').checked;drawPaths();}
+  function lens(){state.lensing=$('lensing').checked;notify(state.lensing?'Light bending enabled':'Light bending disabled');}
+  function field(){state.magnetic=$('magnetic').checked;}
+  for(const [id,key]of [['inclination','elevation'],['distance','distance'],['brightness','brightness'],['speed','speed'],['tilt','tilt'],['compactness','compactness']])$(id).addEventListener('input',e=>{state[key]=Number(e.target.value);sync();});
+  $('pause').addEventListener('click',pause);$('reset').addEventListener('click',reset);$('presentation').addEventListener('click',toggleUI);$('restoreUI').addEventListener('click',toggleUI);$('fullscreen').addEventListener('click',fullscreen);$('lensing').addEventListener('change',lens);$('magnetic').addEventListener('change',field);$('trajectories').addEventListener('change',toggleRays);$('quality').addEventListener('change',e=>{quality=e.target.value;slowWindows=fastWindows=0;if(quality==='auto'){autoLevel=1;autoCeiling=2;}resizePending=true;});$('capture').addEventListener('click',()=>{captureRequested=true;});
+  window.addEventListener('resize',()=>{resizePending=true;});
+  let drag=null;canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
+  canvas.addEventListener('pointermove',e=>{if(!drag)return;state.azimuth-=(e.clientX-drag.x)*.005;state.elevation=Math.max(-75,Math.min(85,state.elevation+(e.clientY-drag.y)*.16));drag={x:e.clientX,y:e.clientY};sync();});
+  const endDrag=()=>{drag=null;};canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);canvas.addEventListener('lostpointercapture',endDrag);
+  canvas.addEventListener('wheel',e=>{e.preventDefault();state.distance=Math.max(6,Math.min(16,state.distance+e.deltaY*.008));sync();},{passive:false});
+  document.addEventListener('keydown',e=>{
+    if(e.target.matches('select,textarea,[contenteditable="true"]')||e.ctrlKey||e.altKey||e.metaKey||e.repeat)return;if(e.key===' '&&e.target.matches('input,button'))return;
+    switch(e.key.toLowerCase()){case ' ':e.preventDefault();pause();break;case 'h':toggleUI();break;case 'f':fullscreen();break;case 'r':reset();break;case 'l':$('lensing').checked=!$('lensing').checked;lens();break;case 'm':$('magnetic').checked=!$('magnetic').checked;field();break;case 't':$('trajectories').checked=!$('trajectories').checked;toggleRays();break;}
+  });
+  document.addEventListener('visibilitychange',()=>{last=0;frames=elapsed=0;});
+  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true;notify('Reconnecting to the graphics card…');});
+  canvas.addEventListener('webglcontextrestored',()=>{try{targets=null;init();last=0;}catch(e){showError('The graphics card could not be restored. Reload the page.',e.message);}});
+  // This geometric lighthouse curve is illustrative, not measured spectral flux.
+  function signal(phase){
+    const axis=magneticBasis(phase).axis,view=cameraPosition(),length=Math.hypot(...view);
+    const dot=Math.max(-1,Math.min(1,axis.reduce((sum,x,i)=>sum+x*view[i]/length,0)));
+    const north=Math.exp(-(Math.acos(dot)**2)/(2*.24**2)),south=.85*Math.exp(-(Math.acos(-dot)**2)/(2*.24**2));return [north,south];
+  }
+  function drawPaths(){
+    if($('trajectoryPanel').hidden)return;
+    const rect=pathCanvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2),w=Math.max(1,Math.round(rect.width*dpr)),h=Math.max(1,Math.round(rect.height*dpr));if(pathCanvas.width!==w||pathCanvas.height!==h){pathCanvas.width=w;pathCanvas.height=h;}
+    const ctx=pathContext,top=8*dpr,bottom=h-12*dpr,left=3*dpr,right=w-5*dpr;
+    ctx.clearRect(0,0,w,h);ctx.strokeStyle='#ffffff0d';ctx.lineWidth=.6*dpr;
+    for(let k=0;k<=4;k++){const x=left+(right-left)*k/4;ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bottom);ctx.stroke();}
+    for(let k=0;k<=2;k++){const y=top+(bottom-top)*k/2;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();}
+    const current=time*.85,colors=['#8ccfff','#a88cff'];
+    for(let pole=0;pole<2;pole++){
+      ctx.strokeStyle=colors[pole];ctx.lineWidth=1.2*dpr;ctx.shadowColor=colors[pole];ctx.shadowBlur=4*dpr;ctx.beginPath();
+      for(let j=0;j<=200;j++){const q=j/200,y=bottom-signal(current-2*Math.PI+q*2*Math.PI)[pole]*(bottom-top),x=left+q*(right-left);j?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();ctx.shadowBlur=0;
+    }
+    const now=signal(current);$('signalValue').textContent=Math.min(1,now[0]+now[1]).toFixed(2);
+    ctx.fillStyle='#8193ae';ctx.font=`${8*dpr}px Segoe UI`;ctx.fillText('ONE ROTATION',left,h-1*dpr);ctx.textAlign='right';ctx.fillText('NOW',right,h-1*dpr);ctx.textAlign='left';
+    now.forEach((value,pole)=>{ctx.fillStyle=colors[pole];ctx.beginPath();ctx.arc(right,bottom-value*(bottom-top),2*dpr,0,Math.PI*2);ctx.fill();});
+  }
+  function animate(now){
+    requestAnimationFrame(animate);if(lost||document.hidden)return;
+    const rawDt=last?(now-last)/1000:0,dt=Math.min(rawDt,.15);last=now;if(!paused)time+=dt*state.speed;
+    const ease=1-Math.exp(-dt*8);for(const key of ['elevation','distance','azimuth'])camera[key]+=(state[key]-camera[key])*ease;
+    try{if(resizePending)resize();draw();}catch(e){lost=true;showError('The simulation could not render. Try reloading the page with low quality.',e.message);return;}
+    frame++;frames++;elapsed+=rawDt;if($('trajectories').checked&&frame%2===0)drawPaths();
+    if(captureRequested){captureRequested=false;canvas.toBlob(blob=>{if(!blob){notify('The image could not be saved.');return;}const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='pulsar-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png';link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);notify('Image saved');},'image/png');}
+    if(elapsed>=1.5){
+      const fps=Math.round(frames/elapsed);$('fps').textContent=fps+' FPS';
+      if(quality==='auto'){
+        slowWindows=fps<48?slowWindows+1:0;fastWindows=fps>57?fastWindows+1:0;
+        // Learn the sustainable ceiling instead of repeatedly retrying a slow level.
+        if(slowWindows>=2&&autoLevel>0){autoCeiling=autoLevel-1;autoLevel--;resizePending=true;slowWindows=fastWindows=0;}
+        else if(fastWindows>=6&&autoLevel<autoCeiling){autoLevel++;resizePending=true;slowWindows=fastWindows=0;}
+      }
+      elapsed=frames=0;
+    }
+  }
+  sync();drawPaths();try{init();requestAnimationFrame(animate);}catch(e){showError('Open this file in a modern browser with hardware acceleration enabled. The simulation requires WebGL 2.',e.message);}
+})();
+</script>
+</body>
+</html>

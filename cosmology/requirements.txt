@@ -1,0 +1,3 @@
+# These simulations use only the Python standard library.
+# No third-party Python packages are required.
+# Their HTML scenes require a browser with WebGL 2 and graphics acceleration.
