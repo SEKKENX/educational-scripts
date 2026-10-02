@@ -1,3 +1,4 @@
-numpy>=1.24
-matplotlib>=3.7
-pillow>=9.5
+# Install the requirements for every category.
+-r quantum-mechanics-scripts/requirements.txt
+-r heart/requirements.txt
+-r cosmology/requirements.txt
